@@ -1,0 +1,58 @@
+<h1><%= @post.title %></h1>
+<p>Posted by: <%= @post.user.try(:email) || 'Anonymous User' %> #<%= @post.user_id %></p>
+<article>
+  <%= @post.body %>
+</article>
+
+<hr>
+
+<div>
+  <% if user_signed_in? %>
+    <% if @post.liked_by?(current_user) %>
+      <%= button_to "Unlike (👍 #{@post.likes.count})", 
+            post_like_path(@post, @post.find_like_by(current_user)), 
+            method: :delete %>
+    <% else %>
+      <%= button_to "Like (👍 #{@post.likes.count})", 
+            post_likes_path(@post), 
+            method: :post %>
+    <% end %>
+  <% else %>
+    <span>👍 <%= @post.likes.count %></span>
+  <% end %>
+</div>
+
+<hr>
+
+<% if current_user == @post.user %>
+  <%= button_to "Delete This Post", @post, method: :delete, data: { confirm: 'Are you sure?' } %>
+  <hr>
+<% end %>
+
+<h2>Comments (<%= @post.comments.count %>)</h2>
+
+<% if user_signed_in? %>
+  <h3>Add Your Comment</h3>
+  <%= simple_form_for [@post, @comment] do |f| %>
+    <%= f.input :body, label: "Comment Content", as: :text %>
+    <%= f.submit "Submit Comment" %>
+  <% end %>
+<% else %>
+  <p><%= link_to 'Login', new_user_session_path %> to comment.</p>
+<% end %>
+
+<div id="comments">
+  <% @post.comments.order(created_at: :asc).each do |comment| %>
+    <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+      <p><strong>Anonymous User #<%= comment.user_id %>:</strong></p>
+      <p><%= comment.body %></p>
+      
+      <% if current_user == comment.user %>
+        <%= button_to "Delete Comment", 
+              post_comment_path(@post, comment), 
+              method: :delete, 
+              data: { confirm: 'Are you sure?' } %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

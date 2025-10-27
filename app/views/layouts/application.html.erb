@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CU-BB</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+  </head>
+  <body>
+    <header>
+      <nav>
+        <%= link_to 'CU Blue Board', root_path %>
+        <% if user_signed_in? %>
+          <span>Welcome, <%= current_user.email %></span>
+          <%= button_to 'Logout', destroy_user_session_path, method: :delete %>
+        <% else %>
+          <%= link_to 'Register', new_user_registration_path %>
+          <%= link_to 'Login', new_user_session_path %>
+        <% end %>
+      </nav>
+    </header>
+
+    <main>
+      <p style="color: green"><%= notice %></p>
+      <p style="color: red"><%= alert %></p>
+      
+      <%= yield %>
+    </main>
+  </body>
+</html>
