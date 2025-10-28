@@ -23,7 +23,7 @@
    - Alternatively run `bin/setup` once; it installs gems, prepares the DB, and launches the dev server.
 
 ### Running the app
-1. Start the server: `bin/dev`
+1. Start the server: rails server
 2. Open the browser at http://localhost:3000
 
 ### Default flows covered in Iteration 1
