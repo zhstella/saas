@@ -1,5 +1,5 @@
 <h1><%= @post.title %></h1>
-<p>Posted by: <%= @post.user.try(:email) || 'Anonymous User' %> #<%= @post.user_id %></p>
+<p>Posted by: <%= display_author(@post.user) %></p>
 <article>
   <%= @post.body %>
 </article>
@@ -44,7 +44,7 @@
 <div id="comments">
   <% @post.comments.order(created_at: :asc).each do |comment| %>
     <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
-      <p><strong>Anonymous User #<%= comment.user_id %>:</strong></p>
+      <p><strong><%= display_author(comment.user) %>:</strong></p>
       <p><%= comment.body %></p>
       
       <% if current_user == comment.user %>

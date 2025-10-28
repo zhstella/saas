@@ -6,20 +6,20 @@ class CommentsController < ApplicationController
     @comment.user = current_user
 
     if @comment.save
-      redirect_to @post, notice: 'Comment added.'
+      redirect_to @post, notice: "Comment added."
     else
-      render 'posts/show', status: :unprocessable_entity
+      render "posts/show", status: :unprocessable_entity
     end
   end
 
   def destroy
     @comment = @post.comments.find(params[:id])
-    
+
     if @comment.user == current_user
       @comment.destroy
-      redirect_to @post, notice: 'Comment deleted.'
+      redirect_to @post, notice: "Comment deleted."
     else
-      redirect_to @post, alert: 'You do not have permission to delete this comment.'
+      redirect_to @post, alert: "You do not have permission to delete this comment."
     end
   end
 

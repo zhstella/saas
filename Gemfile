@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
-gem 'devise'      # 用于用户认证
-gem 'simple_form' # 用于简化表单
+gem "devise"      # 用于用户认证
+gem "simple_form" # 用于简化表单
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.0"
@@ -24,7 +24,7 @@ gem "jbuilder"
 # gem "bcrypt", "~> 3.1.7"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ windows jruby ]
+gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
@@ -55,6 +55,12 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec for behavior-driven unit tests
+  gem "rspec-rails", "~> 6.1.0"
+
+  # Factories for concise test data
+  gem "factory_bot_rails"
 end
 
 group :development do
@@ -66,4 +72,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Cucumber for executable user stories
+  gem "cucumber-rails", require: false
+
+  # Clean database state between scenarios
+  gem "database_cleaner-active_record"
 end
