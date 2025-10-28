@@ -45,6 +45,7 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
+- 21 examples total across the specs below (all green).
 - `spec/models/post_spec.rb`: post validations and keyword search helper.
 - `spec/models/comment_spec.rb`: comment presence/association checks.
 - `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
@@ -52,6 +53,7 @@ bundle exec cucumber
 - `spec/requests/comments_spec.rb`: delete comments with ownership checks and redirects.
 
 **Cucumber scenarios**
+- 5 scenarios / 28 steps covering the primary user journeys.
 - `features/posts/browse_posts.feature`: anonymous feed browsing, search filtering, identity masking.
 - `features/posts/create_post.feature`: sign-up/login flow and successful post creation.
 - `features/comments/add_comment.feature`: authenticated commenting and flash message.
@@ -63,3 +65,49 @@ bundle exec cucumber
 
 ## Additional Materials
 - Iteration artifacts (such as proposal.txt) are stored in `/docs` as the project evolves.
+
+## Repository Map (key folders)
+```text
+CU_Blueboard/
+├── app/
+│   ├── controllers/
+│   │   ├── application_controller.rb   # Global Devise auth hook
+│   │   ├── posts_controller.rb         # Post CRUD + search
+│   │   ├── comments_controller.rb      # Comment create/destroy
+│   │   └── likes_controller.rb         # Like toggle endpoints
+│   ├── models/
+│   │   ├── post.rb                     # Post validations + search helper
+│   │   ├── comment.rb                  # Comment validations
+│   │   ├── like.rb                     # Like uniqueness + associations
+│   │   └── user.rb                     # Devise user with anonymous handle
+│   ├── views/posts/                    # Index/show/new templates & shared form partial
+│   ├── views/layouts/application.html.erb # Main layout (nav, flashes)
+│   ├── helpers/application_helper.rb   # `display_author` pseudonym helper
+│   └── javascript/                     # Hotwire/Stimulus entrypoints (default rails)
+├── config/
+│   ├── routes.rb                       # Devise keyword routes + nested resources
+│   ├── environments/{development,test}.rb # Notes integration + Cucumber annotations
+│   ├── initializers/devise.rb          # Devise configuration
+│   └── initializers/simple_form.rb     # SimpleForm theme overrides
+├── db/
+│   ├── migrate/                        # Devise users + posts/comments/likes tables
+│   └── schema.rb                       # Current SQLite schema
+├── docs/
+│   └── proposal.txt                    # Iteration proposal document
+├── features/
+│   ├── comments/add_comment.feature    # Cucumber scenario for commenting
+│   ├── posts/browse_posts.feature      # Browse & search flow with anonymity check
+│   ├── posts/create_post.feature       # Signup + post creation flow
+│   ├── posts/like_post.feature         # Like/unlike toggle flow
+│   ├── step_definitions/post_steps.rb  # Shared step implementations
+│   └── support/env.rb                  # Cucumber+DatabaseCleaner setup
+├── lib/tasks/cucumber.rake             # Rake tasks for Cucumber profiles
+├── spec/
+│   ├── factories/{users,posts,comments,likes}.rb # FactoryBot fixtures
+│   ├── models/{post,comment,like}_spec.rb        # Model specs
+│   ├── requests/{posts,comments}_spec.rb         # Authorization specs
+│   └── rails_helper.rb                 # RSpec + Devise/Test helpers config
+├── test/controllers/*_test.rb          # Stubbed scaffold tests (skipped)
+├── README.md                           # Iteration instructions & deliverables
+└── Gemfile                             # Dependencies (Rails 8.1, Devise, etc.)
+```

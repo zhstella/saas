@@ -8,7 +8,7 @@ class User < ApplicationRecord
 
   # Provide a stable pseudonym for display without leaking email addresses
   def anonymous_handle
-    suffix = id.to_s(36).upcase.rjust(4, '0')
+    suffix = id.to_s(36).upcase.rjust(4, "0")
     "Lion ##{suffix}"
   end
 end
