@@ -107,6 +107,8 @@ CU_Blueboard/
 │   ├── models/{post,comment,like}_spec.rb        # Model specs
 │   ├── requests/{posts,comments}_spec.rb         # Authorization specs
 │   └── rails_helper.rb                 # RSpec + Devise/Test helpers config
+├── test/application_system_test_case.rb # Stub system test base class (no tests)
+├── test/system/.keep                   # Placeholder to satisfy Rails system-test task
 ├── test/test_helper.rb                 # Remaining Minitest harness (empty)
 ├── README.md                           # Iteration instructions & deliverables
 └── Gemfile                             # Dependencies (Rails 8.1, Devise, etc.)
