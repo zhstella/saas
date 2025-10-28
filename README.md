@@ -107,7 +107,7 @@ CU_Blueboard/
 │   ├── models/{post,comment,like}_spec.rb        # Model specs
 │   ├── requests/{posts,comments}_spec.rb         # Authorization specs
 │   └── rails_helper.rb                 # RSpec + Devise/Test helpers config
-├── test/controllers/*_test.rb          # Stubbed scaffold tests (skipped)
+├── test/test_helper.rb                 # Remaining Minitest harness (empty)
 ├── README.md                           # Iteration instructions & deliverables
 └── Gemfile                             # Dependencies (Rails 8.1, Devise, etc.)
 ```
