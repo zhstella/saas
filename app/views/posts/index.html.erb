@@ -20,7 +20,7 @@
         <%= link_to post.title, post_path(post) %>
       </h3>
       <p>
-        Posted by: <%= post.user.try(:email) || 'Anonymous User' %> #<%= post.user_id %>
+        Posted by: <%= display_author(post.user) %>
       </p>
       <p>
         <span>👍 <%= post.likes.count %></span> | 

@@ -55,6 +55,12 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec for behavior-driven unit tests
+  gem "rspec-rails", "~> 6.1.0"
+
+  # Factories for concise test data
+  gem "factory_bot_rails"
 end
 
 group :development do
@@ -66,4 +72,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Cucumber for executable user stories
+  gem "cucumber-rails", require: false
+
+  # Clean database state between scenarios
+  gem "database_cleaner-active_record"
 end
