@@ -8,25 +8,23 @@
 
 ## Project Pitch
 - Video: https://youtu.be/9S1olW0Fe4o
-- Proposal: see `proposal.txt`
+- Proposal: see `/docs/proposal.txt`
 
 ## Prerequisites
 - Ruby `3.2.2` (see `.ruby-version`)
+  - Recommended: install via `rbenv` → `brew install rbenv ruby-build`, `rbenv install 3.2.2`, `rbenv local 3.2.2`
 - Bundler (`gem install bundler`)
 - SQLite 3 (ships with macOS/Linux)
 
 ## Local Setup
-```bash
-bundle install
-bin/rails db:prepare
-# or run bin/setup to perform both steps and start the dev server
-```
+1. Ensure Bundler is available: `gem install bundler`
+2. Install project gems: `bundle install`
+3. Prepare the database: `bin/rails db:prepare`
+   - Alternatively run `bin/setup` once; it installs gems, prepares the DB, and launches the dev server.
 
 ### Running the app
-```bash
-bin/dev
-# visit http://localhost:3000
-```
+1. Start the server: `bin/dev`
+2. Open the browser at http://localhost:3000
 
 ### Default flows covered in Iteration 1
 - Browse a feed of posts anonymously, including keyword search without revealing identities
