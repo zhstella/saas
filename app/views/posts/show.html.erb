@@ -9,12 +9,12 @@
 <div>
   <% if user_signed_in? %>
     <% if @post.liked_by?(current_user) %>
-      <%= button_to "Unlike (👍 #{@post.likes.count})", 
-            post_like_path(@post, @post.find_like_by(current_user)), 
+      <%= button_to "Unlike (👍 #{@post.likes.count})",
+            post_like_path(@post, @post.find_like_by(current_user)),
             method: :delete %>
     <% else %>
-      <%= button_to "Like (👍 #{@post.likes.count})", 
-            post_likes_path(@post), 
+      <%= button_to "Like (👍 #{@post.likes.count})",
+            post_likes_path(@post),
             method: :post %>
     <% end %>
   <% else %>
@@ -46,11 +46,11 @@
     <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
       <p><strong><%= display_author(comment.user) %>:</strong></p>
       <p><%= comment.body %></p>
-      
+
       <% if current_user == comment.user %>
-        <%= button_to "Delete Comment", 
-              post_comment_path(@post, comment), 
-              method: :delete, 
+        <%= button_to "Delete Comment",
+              post_comment_path(@post, comment),
+              method: :delete,
               data: { confirm: 'Are you sure?' } %>
       <% end %>
     </div>

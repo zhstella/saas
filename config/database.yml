@@ -20,7 +20,6 @@ production:
     encoding: unicode
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     url: <%= ENV['DATABASE_URL'] %>
-  
   # Point all services to the same database on Heroku
   cache:
     <<: *primary_production
