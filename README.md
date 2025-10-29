@@ -60,7 +60,7 @@ bundle exec cucumber
 - `features/posts/like_post.feature`: like/unlike toggle with count updates.
 
 ## Deployment
-- Heroku: _link to be added once the staging app is live_
+- Heroku: https://cu-blueboard-27a6a02ee825.herokuapp.com/
 - Source code: https://github.com/zhstella/CU_Blueboard
 
 ## Additional Materials
