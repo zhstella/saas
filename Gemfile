@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+ruby "3.2.2"  # Specify Ruby version for Heroku
+
 gem "devise"      # 用于用户认证
 gem "simple_form" # 用于简化表单
 
@@ -7,8 +9,6 @@ gem "simple_form" # 用于简化表单
 gem "rails", "~> 8.1.0"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", ">= 2.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
@@ -44,6 +44,9 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 group :development, :test do
+  # Use sqlite3 as the database for Active Record in development/test
+  gem "sqlite3", ">= 2.1"
+  
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
@@ -78,4 +81,9 @@ group :test do
 
   # Clean database state between scenarios
   gem "database_cleaner-active_record"
+end
+
+group :production do
+  # PostgreSQL for Heroku production database
+  gem "pg", "~> 1.5"
 end

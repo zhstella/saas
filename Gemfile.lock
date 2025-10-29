@@ -245,6 +245,9 @@ GEM
     parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
+    pg (1.6.2-aarch64-linux)
+    pg (1.6.2-arm64-darwin)
+    pg (1.6.2-x86_64-linux)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -438,6 +441,7 @@ GEM
 
 PLATFORMS
   aarch64-linux
+  arm64-darwin-23
   arm64-darwin-24
   arm64-darwin-25
   x86_64-linux
@@ -456,6 +460,7 @@ DEPENDENCIES
   importmap-rails
   jbuilder
   kamal
+  pg (~> 1.5)
   propshaft
   puma (>= 5.0)
   rails (~> 8.1.0)
@@ -472,6 +477,9 @@ DEPENDENCIES
   turbo-rails
   tzinfo-data
   web-console
+
+RUBY VERSION
+   ruby 3.2.2p53
 
 BUNDLED WITH
    2.4.10
