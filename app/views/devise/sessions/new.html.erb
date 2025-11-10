@@ -1,0 +1,22 @@
+<div class="login-box" style="text-align: center; background: #f8f8f8; padding: 40px; border-radius: 8px;">
+  
+  <h2 style="font-weight: 700;">Log In</h2>
+  <p style="color: #666; margin-bottom: 25px;">For Columbia & Barnard Students</p>
+
+  <%# 
+    1. 我们【保留】这个SSO按钮 
+    它会正确地跳转到 Google 并处理 @columbia.edu 和 @barnard.edu
+  %>
+  <%= button_to "Login with Columbia SSO", 
+        user_google_oauth2_omniauth_authorize_path, 
+        method: :post, 
+        data: { turbo: "false" },
+        style: "background-color: #003865; color: white; padding: 15px; border: none; border-radius: 5px; font-weight: 600; font-size: 1rem; cursor: pointer; width: 100%;" 
+  %>
+
+  <div class="sso-note" style="margin-top: 20px; color: #555; font-size: 0.9rem;">
+    <span>🔒</span>
+    <span> 仅支持 @columbia.edu 和 @barnard.edu 邮箱</span>
+  </div>
+
+</div>

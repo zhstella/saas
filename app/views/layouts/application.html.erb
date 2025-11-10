@@ -12,13 +12,16 @@
   <body>
     <header>
       <nav>
-        <%= link_to 'CU Blue Board', root_path %>
         <% if user_signed_in? %>
+          <%# 用户已登录： "Home" 链接指向应用主页 %>
+          <%= link_to 'CU-BB (Home)', authenticated_root_path %>
           <span>Welcome, <%= current_user.email %></span>
           <%= button_to 'Logout', destroy_user_session_path, method: :delete %>
         <% else %>
+          <%# 用户未登录： "Home" 链接指向登录页本身 %>
+          <%= link_to 'CU-BB (Login)', unauthenticated_root_path %>
           <%= link_to 'Register', new_user_registration_path %>
-          <%= link_to 'Login', new_user_session_path %>
+          <%# 我们已经在登录页了，所以不需要 "Login" 链接 %>
         <% end %>
       </nav>
     </header>
