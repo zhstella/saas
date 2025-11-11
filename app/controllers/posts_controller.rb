@@ -1,7 +1,6 @@
 class PostsController < ApplicationController
   # 2. 在这里为 PostsController 设置一个“特例”：
   # “跳过”登录验证，但【仅】针对 :index 和 :show 页面。
-  skip_before_action :authenticate_user!, only: [ :index, :show ]
 
   before_action :set_post, only: [ :show, :destroy ]
 
