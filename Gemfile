@@ -81,6 +81,9 @@ group :test do
 
   # Clean database state between scenarios
   gem "database_cleaner-active_record"
+
+  # Code coverage measurement
+  gem "simplecov", require: false
 end
 
 group :production do

@@ -25,6 +25,28 @@ RSpec.describe "Posts", type: :request do
       end
     end
 
+    context "when signed in with invalid data" do
+      it "does not create post with missing title" do
+        sign_in user
+
+        expect {
+          post posts_path, params: { post: { title: "", body: "Body content" } }
+        }.not_to change(Post, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "does not create post with missing body" do
+        sign_in user
+
+        expect {
+          post posts_path, params: { post: { title: "Title", body: "" } }
+        }.not_to change(Post, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
     context "when not signed in" do
       it "redirects to the sign-in page" do
         post posts_path, params: valid_params
