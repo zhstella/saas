@@ -90,3 +90,8 @@ group :production do
   # PostgreSQL for Heroku production database
   gem "pg", "~> 1.5"
 end
+
+
+gem 'omniauth-google-oauth2'
+gem 'omniauth'
+gem 'omniauth-rails_csrf_protection'
