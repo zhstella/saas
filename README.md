@@ -35,6 +35,10 @@
 - Toggle likes on posts while preventing duplicate likes per user
 - Display pseudonymous handles instead of email addresses on posts and comments
 
+### Default flows covered in Iteration 2
+- Sign in with Columbia/Barnard Google accounts via OmniAuth, automatically rejecting emails outside the approved domains to simulate campus SSO.
+- Experience a refreshed login page and global header that rely on the new `application.css` / `login.css` styles instead of `simple.css`, allowing us to keep iterating on the UI without conflicting defaults.
+
 ## Test Suites
 ```bash
 # RSpec unit/request coverage
