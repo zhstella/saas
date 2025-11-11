@@ -1,0 +1,256 @@
+/* app/assets/stylesheets/login.css.erb */
+
+/* ======================================= */
+/* 1. 整体布局 (Overall Layout)             */
+/* ======================================= */
+
+/* app/assets/stylesheets/login.css */
+
+/* app/assets/stylesheets/login.css */
+
+body.login-page {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  height: 100%;
+  position: relative;
+}
+
+
+/* 覆盖层 */
+body.login-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 40, 80, 0.1); /* 轻微的蓝色/暗色叠加 */
+  z-index: 1;
+  display: none;
+}
+
+.login-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+/* ======================================= */
+/* 2. 页眉 (Header)                        */
+/* ======================================= */
+
+/* 这是适用于 *两个* Header (登录页和主页) 的
+  单一、干净的规则。
+*/
+.login-header {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  max-width: none; 
+  background-color: white;   
+  border-bottom: 1px solid #e0e0e0; 
+  padding: 12px 48px; 
+  box-sizing: border-box; 
+  position: relative;
+  z-index: 10;
+}
+
+/* !! 新规则 !!
+  这会强制右侧的链接在同一行显示
+*/
+.header-nav {
+  display: flex;
+  align-items: center;
+}
+
+/* 这是 <a href> ("My threads", "About") 的统一样式
+*/
+.header-nav a {
+  color: #555;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;       /* 确保字体大小一致 */
+  margin-left: 20px;
+  text-shadow: none;
+}
+.header-nav a:hover {
+  text-decoration: underline;
+}
+
+/* 这是 <button_to> ("Logout") 的统一样式
+  我们让它看起来和 <a> 标签一模一样
+*/
+.header-nav .nav-logout-button {
+  /* 重置 */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  
+  /* 匹配 <a> 标签的样式 */
+  color: #555;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;       /* 确保字体大小一致 */
+  font-family: inherit;  /* 继承字体 */
+  margin-left: 20px;
+  
+  cursor: pointer;
+}
+.header-nav .nav-logout-button:hover {
+  text-decoration: underline;
+}
+
+/* --- Logo 样式 (保持不变) --- */
+.header-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-owl {
+  height: 40px; 
+  border-radius: 50%;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  color: #333;
+  text-shadow: none;
+}
+.logo-main-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #004B8D;
+}
+.logo-sub-text {
+  font-size: 0.875rem;
+  color: #005EAD;
+}
+
+/* ======================================= */
+/* 3. 中心内容 (Main Content)            */
+/* ======================================= */
+.login-main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; 
+  align-items: center; /* (保持 'center'，这用于水平居中) */
+  padding: 10% 20px 20px 20px; /* 顶部10%, 其他三边 20px */
+  
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  box-sizing: border-box; 
+}
+
+.login-form-box {
+  background-color: #004B8D; 
+
+  padding: 48px 56px;
+  
+  border-radius: 16px; 
+  text-align: center;
+  
+  max-width: 600px;
+  
+  width: 100%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.login-title {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.btn-sso-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: white;
+  color: #333; 
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px; 
+  padding: 14px 20px;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-sizing: border-box;
+}
+
+.btn-sso-login:hover {
+  background-color: #f4f4f4; 
+}
+
+.icon-crown {
+  height: 20px; 
+  width: auto;
+}
+
+.login-sub-links {
+  text-align: center;
+  margin-top: 24px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.login-sub-links p {
+  margin: 8px 0;
+}
+
+.login-sub-links a {
+  color: white;
+  text-decoration: underline;
+}
+
+/* ======================================= */
+/* 4. 页脚 (Footer)                       */
+/* ======================================= */
+
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  width: 100%;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-sizing: border-box;
+  display: none;
+}
+
+.footer-left-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-shield {
+  height: 30px;
+}
+
+.footer-left-group a,
+.footer-nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-left: 16px;
+}
+
+.footer-left-group a:hover,
+.footer-nav a:hover {
+  text-decoration: underline;
+}

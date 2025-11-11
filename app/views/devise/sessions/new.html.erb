@@ -1,22 +1,60 @@
-<div class="login-box" style="text-align: center; background: #f8f8f8; padding: 40px; border-radius: 8px;">
+<% content_for :body_class, "login-page" %>
+<%= stylesheet_link_tag "login", "data-turbo-track": "reload" %>
+
+<style>
+  .login-main-content {
+    background-image: url('<%= asset_path 'backgrounds/columbia_butler_day.jpg' %>');
+  }
+</style>
+
+
+<%# app/views/devise/sessions/new.html.erb %>
+
+<div class="login-page-wrapper">
   
-  <h2 style="font-weight: 700;">Log In</h2>
-  <p style="color: #666; margin-bottom: 25px;">For Columbia & Barnard Students</p>
-
-  <%# 
-    1. 我们【保留】这个SSO按钮 
-    它会正确地跳转到 Google 并处理 @columbia.edu 和 @barnard.edu
-  %>
-  <%= button_to "Login with Columbia SSO", 
-        user_google_oauth2_omniauth_authorize_path, 
-        method: :post, 
-        data: { turbo: "false" },
-        style: "background-color: #003865; color: white; padding: 15px; border: none; border-radius: 5px; font-weight: 600; font-size: 1rem; cursor: pointer; width: 100%;" 
-  %>
-
-  <div class="sso-note" style="margin-top: 20px; color: #555; font-size: 0.9rem;">
-    <span>🔒</span>
-    <span> 仅支持 @columbia.edu 和 @barnard.edu 邮箱</span>
+  <header class="login-header">
+  <div class="header-logo-group">
+    <%= image_tag 'logos/cubb_owl.jpg', alt: 'CU BlueBoard Logo', class: 'logo-owl' %>
+    <div class="logo-text">
+      <span class="logo-main-text">CU BlueBoard</span>
+      <span class="logo-sub-text">Columbia & Barnard</span>
+    </div>
   </div>
+  
+  <nav class="header-nav">
+    <a href="#">About</a>
+    <a href="#">Help</a>
+  </nav>
 
+</header>
+
+  <main class="login-main-content">
+    <div class="login-form-box">
+      <h2 class="login-title">LOG IN WITH UNIVERSITY SSO</h2>
+      
+      <%= button_to user_google_oauth2_omniauth_authorize_path, 
+              method: :post, 
+              data: { turbo: "false" }, 
+              class: "btn-sso-login" do %>
+
+        <%= image_tag 'icons/crown.png', alt: 'Verified', class: 'icon-crown' %>
+        <span>Only for Columbia and Barnard Students & Faculty</span>
+      <% end %>
+    </div>
+    
+    <div class="login-sub-links">
+      <%# 链接已注释 %>
+    </div>
+  </main>
+
+  <footer class="login-footer">
+    <div class="footer-left-group">
+      <%# !! 已更新为你提供的路径 !! %>
+      <%= image_tag 'logos/shield.png', alt: 'University Shield', class: 'logo-shield' %>
+      <%# 链接已注释 %>
+    </div>
+    <nav class="footer-nav">
+      <%# 链接已注释 %>
+    </nav>
+  </footer>
 </div>
