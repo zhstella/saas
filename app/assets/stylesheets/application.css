@@ -1,45 +1,49 @@
 /*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
+ * This is a manifest file... (保留你文件顶部的所有 manifest 注释)
+ * ...
  * Consider organizing styles into separate files for maintainability.
  */
 
+
 /* ======================================= */
-/* 2. 页眉 (Header) - 共享样式 (干净版)  */
+/* 1. 全局 Body 样式 (新添加)            */
+/* ======================================= */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* ======================================= */
+/* 2. 页眉 (Header)                         */
 /* ======================================= */
 .login-header {
   display: flex;
   justify-content: space-between; 
   align-items: center;
-  
+
   width: 100%;
   margin: 0;
   max-width: none; 
   background-color: white;   
   border-bottom: 1px solid #e0e0e0; 
   padding: 12px 48px; 
-  
+
   box-sizing: border-box; 
-  position: relative;
+  position: fixed; /* 固定在屏幕顶部 */
+  top: 0;
+  left: 0;
   z-index: 10;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* !! 关键修复 !!
-  这会强制 "My threads" 和 "Logout" 在同一行
+/* 这会强制 "My threads" 和 "Logout" 在同一行
 */
 .header-nav {
   display: flex;
   align-items: center;
 }
 
-/*
-  这是 <a href> ("My threads", "About") 的统一样式
+/* <a href> ("My threads", "About") 的统一样式
 */
 .header-nav a {
   color: #555;
@@ -49,16 +53,13 @@
   margin-left: 20px;
   text-shadow: none;
   
-  /* 重置 simple.css 可能留下的样式 (以防万一) */
   background: none;
   border: none;
   padding: 0;
   line-height: inherit;
 }
 
-/*
-  这是 <button_to> ("Logout") 的统一样式
-  我们让它看起来和 <a> 标签一模一样
+/* <button_to> ("Logout") 的统一样式
 */
 .header-nav .nav-logout-button {
   /* 重置按钮样式 */
@@ -72,23 +73,22 @@
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
-  font-family: inherit;  /* 继承字体 */
+  font-family: inherit;
   margin-left: 20px;
   
   cursor: pointer;
 }
 
-/* !! 你的新 Hover 效果 !!
-  (变 #004B8D, 不加下划线)
+/* 你的新 Hover 效果
 */
 .header-nav a:hover,
 .header-nav .nav-logout-button:hover {
-  color: #004B8D;      /* 变成 #004B8D */
-  text-decoration: none; /* 不加下划线 */
+  color: #004B8D;
+  text-decoration: none;
 }
 
 
-/* --- Logo 样式 (保持不变) --- */
+/* --- Logo 样式 --- */
 .header-logo-group {
   display: flex;
   align-items: center;
@@ -112,4 +112,65 @@
 .logo-sub-text {
   font-size: 0.875rem;
   color: #005EAD; 
+}
+
+/* ======================================= */
+/* 3. Header Flash 消息                  */
+/* ======================================= */
+.header-flash-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-flash {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.header-flash.fade-out {
+  opacity: 0;
+}
+
+.flash-notice {
+  color: #3C763D;
+  background-color: #DFF0D8;
+  border: 1px solid #D6E9C6;
+}
+
+.flash-alert {
+  color: #A94442;
+  background-color: #F2DEDE;
+  border: 1px solid #EBCCD1;
+}
+
+
+/* ======================================= */
+/* 4. 主内容区域 (已修复)                */
+/* ======================================= */
+.app-main-content {
+  /* 为固定的 Header 腾出空间 */
+  padding-top: 64px;
+
+  /* 确保内容区域至少填满整个屏幕的高度 */
+  min-height: 100vh;
+  box-sizing: border-box; 
+
+  /* !! 注意 !!
+    背景图 (background-image) 样式已从这里移除，
+    并被移回到了 application.html.erb 中，
+    因为它必须使用 ERB 助手。
+  */
 }

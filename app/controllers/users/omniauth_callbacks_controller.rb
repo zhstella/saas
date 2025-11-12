@@ -11,7 +11,7 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
     else
       # 2B. 登录失败 (不是 @columbia.edu 邮箱)
       # @user 在 User.from_omniauth 中返回了 nil
-      flash[:alert] = 'Access Denied. You must use a @columbia.edu email address to log in.'
+      flash[:alert] = 'Access Denied. You must use a @columbia.edu or @barnard.edu email address to log in.'
       redirect_to unauthenticated_root_path
     end
   end

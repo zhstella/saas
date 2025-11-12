@@ -6,18 +6,25 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%# 
-      !! 关键更改 !!
-      <link ... simple.css> 及其 'unless' 逻辑块
-      已从这里被永久删除。
-    %>
-
-    <%# 
-      现在 application.css 是主页唯一的样式表。
-      (login.css 仍然只在登录页上加载)
-    %>
+    <%# 加载你自己的 application.css %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+
+    <style>
+      .app-main-content {
+        /* 1. 85% 不透明度的白色遮罩 (为了易读性) */
+        background-image: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+                          
+        /* 2. 你的背景图 (使用 ERB 助手) */
+                          url('<%= asset_path 'backgrounds/columbia_butler_day.jpg' %>'); 
+
+        /* --- 辅助样式 --- */
+        background-size: cover;
+        background-position: center center;
+        background-attachment: fixed; /* 关键: 滚动时背景固定不动 */
+        background-repeat: no-repeat;
+      }
+    </style>
   </head>
 
   <body class="<%= yield(:body_class) || "" %>">
@@ -26,12 +33,22 @@
     <% unless content_for?(:body_class) && yield(:body_class) == 'login-page' %>
       
       <header class="login-header">
+        
+        <%# ... (你的 Header 内容保持不变) ... %>
         <div class="header-logo-group">
           <%= image_tag 'logos/cubb_owl.jpg', alt: 'CU BlueBoard Logo', class: 'logo-owl' %>
           <div class="logo-text">
             <span class="logo-main-text">CU BlueBoard</span>
             <span class="logo-sub-text">Columbia & Barnard</span>
           </div>
+        </div>
+        <div class="header-flash-container">
+          <% if notice.present? %>
+            <div class="header-flash flash-notice"><%= notice %></div>
+          <% end %>
+          <% if alert.present? %>
+            <div class="header-flash flash-alert"><%= alert %></div>
+          <% end %>
         </div>
         <nav class="header-nav">
           <a href="#">My threads</a>
@@ -42,21 +59,31 @@
         </nav>
       </header>
 
-      <main>
-        <%# (我已修复了上次的 notice % 拼写错误) %>
-        <p style="color: green"><%= notice %></p>
-        <p style="color: red"><%= alert %></p>
+      <main class="app-main-content">
         <%= yield %>
       </main>
 
     <%# --- 登录页 (已登出) --- %>
     <% else %>
-      <%# 
-        这会原样渲染 new.html.erb，
-        它会自己加载 login.css
-      %>
       <%= yield %>
     <% end %>
 
+    <%# --- Flash 消息淡出脚本 (保持不变) --- %>
+    <script>
+      document.addEventListener("turbo:load", function() {
+        // ... (你的 JS 脚本保持不变) ...
+        const flashElements = document.querySelectorAll(".header-flash");
+        if (flashElements.length > 0) {
+          flashElements.forEach(function(flashElement) {
+            setTimeout(() => {
+              flashElement.classList.add("fade-out");
+              setTimeout(() => {
+                flashElement.remove();
+              }, 500); 
+            }, 3000); 
+          });
+        }
+      });
+    </script>
   </body>
 </html>
