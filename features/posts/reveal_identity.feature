@@ -13,9 +13,9 @@ Feature: Reveal identity on demand
     Then I should see "Author chose to reveal their identity."
     And I should see "author@example.com" on the page
 
-  Scenario: Author reveals their identity on a comment
+  Scenario: Author reveals their identity on an answer
     When I visit the post titled "Looking for study partners"
-    And I leave a comment "Happy to share my UNI if needed."
-    And I reveal my identity on the most recent comment
-    Then I should see "Commenter revealed their identity."
-    And I should see "author@example.com" in the comments list
+    And I leave an answer "Happy to share my UNI if needed."
+    And I reveal my identity on the most recent answer
+    Then I should see "Answerer revealed their identity."
+    And I should see "author@example.com" in the answers list

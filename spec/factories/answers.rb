@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :comment do
+  factory :answer do
     association :post
     association :user
     body { "Insightful response" }

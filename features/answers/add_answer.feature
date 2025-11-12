@@ -1,6 +1,6 @@
 Feature: Respond to a question
   As a community member with helpful advice
-  I want to leave an anonymous comment on a question
+  I want to leave an anonymous answer on a question
   So that I can guide classmates quickly
 
   Background:
@@ -10,15 +10,15 @@ Feature: Respond to a question
     Given a user exists with email "mentor@example.com" and password "Password123!"
     And I sign in with email "mentor@example.com" and password "Password123!"
     When I visit the post titled "Applying for CPT"
-    And I leave a comment "Bring your updated I-20 to the appointment."
-    Then I should see "Comment added."
-    And I should see "Bring your updated I-20 to the appointment." in the comments list
+    And I leave an answer "Bring your updated I-20 to the appointment."
+    Then I should see "Answer added."
+    And I should see "Bring your updated I-20 to the appointment." in the answers list
 
-  Scenario: Missing comment body shows validation errors
+  Scenario: Missing answer body shows validation errors
     Given a user exists with email "helper@example.com" and password "Password123!"
     And I sign in with email "helper@example.com" and password "Password123!"
     When I visit the post titled "Applying for CPT"
-    And I submit an empty comment
+    And I submit an empty answer
     Then I should see "Body can't be blank"
 
   Scenario: Guest must log in before replying

@@ -91,14 +91,14 @@ When('I visit the post titled {string}') do |title|
   visit Rails.application.routes.url_helpers.post_path(post)
 end
 
-When('I leave a comment {string}') do |comment_body|
-  fill_in 'Comment Content', with: comment_body
-  click_button 'Submit Comment'
+When('I leave an answer {string}') do |answer_body|
+  fill_in 'Answer Content', with: answer_body
+  click_button 'Submit Answer'
 end
 
-When('I submit an empty comment') do
-  fill_in 'Comment Content', with: ''
-  click_button 'Submit Comment'
+When('I submit an empty answer') do
+  fill_in 'Answer Content', with: ''
+  click_button 'Submit Answer'
 end
 
 When('I open the post titled {string}') do |title|
@@ -122,10 +122,20 @@ When('I reveal my identity on the post titled {string}') do |title|
   click_button 'Reveal My Identity'
 end
 
-When('I reveal my identity on the most recent comment') do
+When('I reveal my identity on the most recent answer') do
   within(all('.comment-card').last) do
     click_button 'Reveal My Identity'
   end
+end
+
+When('I accept the most recent answer') do
+  within(all('.comment-card').last) do
+    click_button 'Accept Answer'
+  end
+end
+
+When('I reopen the thread') do
+  click_button 'Reopen Thread'
 end
 
 Then('I should see {string} in the posts list') do |text|
@@ -144,14 +154,14 @@ Then('I should see {string} on the page') do |text|
   expect(page).to have_content(text)
 end
 
-Then('I should see {string} in the comments list') do |text|
-  within('#comments') do
+Then('I should see {string} in the answers list') do |text|
+  within('#answers') do
     expect(page).to have_content(text)
   end
 end
 
-Then('I should not see {string} in the comments list') do |text|
-  within('#comments') do
+Then('I should not see {string} in the answers list') do |text|
+  within('#answers') do
     expect(page).not_to have_content(text)
   end
 end
@@ -179,7 +189,7 @@ Then('I should see the thread pseudonym for {string} on {string}') do |email, ti
   post = Post.find_by!(title: title)
   identity = ThreadIdentity.find_by!(user: user, post: post)
 
-  within('#comments') do
+  within('#answers') do
     expect(page).to have_content(identity.pseudonym)
   end
 end
@@ -190,4 +200,8 @@ end
 
 Then('I should see {string}') do |text|
   expect(page).to have_content(text)
+end
+
+Then('I should not see {string}') do |text|
+  expect(page).not_to have_content(text)
 end

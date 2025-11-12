@@ -59,9 +59,9 @@
 - Register/log in via Devise to get a pseudonymous identity
 - Create new questions with title/body validation
 - Delete posts you authored with confirmation guardrails
-- Reply to a post through comments and remove your own comments
+- Reply to a post through answers and remove your own answers
 - Toggle likes on posts while preventing duplicate likes per user
-- Display pseudonymous handles instead of email addresses on posts and comments
+- Display pseudonymous handles instead of email addresses on posts and answers
 
 ### Default flows covered in Iteration 2
 - Sign in with Columbia/Barnard Google accounts via OmniAuth; the callback controller enforces the domain whitelist and surfaces an “Access Denied” flash for non-campus addresses.
@@ -69,9 +69,10 @@
 - Protect the feed by redirecting signed-out visitors to the redesigned login page via the global `authenticate_user!` hook and the authenticated/unauthenticated root split in `routes.rb`.
 - Experience the refreshed login page and global header powered by `application.css` / `login.css` plus the new asset packs, replacing `simple.css` and unifying the UI.
 - Generate thread-specific pseudonyms via the `ThreadIdentity` join table so every author gets a stable alias per conversation instead of a global handle.
-- Reveal identities on demand: posts and comments stay anonymous by default, but authors can opt-in to showing their real email with one click, and every reveal is captured in `AuditLog` for moderator traceability.
+- Reveal identities on demand: posts and answers stay anonymous by default, but authors can opt-in to showing their real email with one click, and every reveal is captured in `AuditLog` for moderator traceability.
 - Mark posts as ephemeral by selecting a 7/14/30-day expiry window. Expired threads drop off the feed automatically and cannot be opened once the timer elapses.
 - Schedule the daily `ExpirePostsJob` (Heroku Scheduler, cron, etc.) to purge threads whose `expires_at` timestamps have passed so the feed stays fresh. Manually trigger it anytime with `rails runner 'ExpirePostsJob.perform_later'`.
+- Structure Q&A so every reply is an answer, question authors can accept the best response, and the thread locks (with a reopen button) once solved.
 
 ## Test Suites
 ```bash
@@ -83,28 +84,29 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 69 examples / 0 failures (line coverage 85.00%, branch coverage 80.36%).
+- 74 examples / 0 failures (line coverage 84.96%, branch coverage 76.32%).
 - `spec/models/post_spec.rb`: validations, search helper, and thread-identity callback.
-- `spec/models/comment_spec.rb`: validations plus per-thread identity creation.
+- `spec/models/answer_spec.rb`: validations, per-thread identity creation, and acceptance cleanup.
 - `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
 - `spec/models/user_spec.rb`: anonymous handle generation and associations.
 - `spec/models/thread_identity_spec.rb`, `spec/models/audit_log_spec.rb`: new anonymity infrastructure.
 - `spec/requests/posts_spec.rb`: create/delete flows, guest redirects, thread identities, reveal audits.
-- `spec/requests/comments_spec.rb`: comment CRUD, validation failures, thread identities, reveal audits.
+- `spec/requests/answers_spec.rb`: answer CRUD, validation failures, thread identities, acceptance, and reveal audits.
 - `spec/requests/likes_spec.rb`: like/unlike actions with authentication checks.
 - `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
 
 **Cucumber scenarios**
-- Latest run: 16 scenarios / 95 steps passing in ~0.4s via `bundle exec cucumber`.
-- Features exercised: commenting, browsing/searching, creating posts (including expiring threads), liking/unliking, identity reveals, and thread-specific pseudonyms to ensure observers only see alias handles.
-- Coverage snapshot: line 73.66% (165/224), branch 55.36% (31/56). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
+- Latest run: 18 scenarios / 125 steps passing in ~0.5s via `bundle exec cucumber`.
+- Features exercised: answering, browsing/searching, creating posts (including expiring threads), liking/unliking, identity reveals, thread-specific pseudonyms, and locking/unlocking accepted answers to keep threads tidy.
+- Coverage snapshot: line 84.96% (226/266), branch 76.32% (58/76). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
 - Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true` in `cucumber.yml`). Set `CUCUMBER_PUBLISH_QUIET=true` locally to silence the banner.
 - `features/posts/browse_posts.feature`: authenticated browsing, empty-search alert, and guest redirect to the SSO screen.
 - `features/posts/create_post.feature`: signup + creation flow plus validation failures and guest access checks.
-- `features/comments/add_comment.feature`: commenting success + validation errors.
+- `features/answers/add_answer.feature`: answering success + validation errors.
 - `features/posts/like_post.feature`: like/unlike toggle with count updates.
-- `features/posts/reveal_identity.feature`: verifies post/comment reveal buttons surface real identities and audit logs.
-- `features/posts/thread_pseudonym.feature`: proves each thread shows a unique pseudonym and never leaks the commenter’s email.
+- `features/posts/reveal_identity.feature`: verifies post/answer reveal buttons surface real identities and audit logs.
+- `features/posts/thread_pseudonym.feature`: proves each thread shows a unique pseudonym and never leaks the answerer’s email.
+- `features/posts/accept_answer.feature`: author accepts an answer, thread locks, and reopening restores the composer.
 
 ### Test Coverage
 
@@ -130,9 +132,9 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 - A daily `ExpirePostsJob` can be scheduled (e.g., via Heroku Scheduler or cron) to purge posts whose `expires_at` timestamp has passed.
 
 ## Addressing Iteration 1 Feedback
-- Added Cucumber coverage for empty-search alerts, validation errors, and guest redirects so the user stories graders requested are now executable specs (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/comments/add_comment.feature`).
+- Added Cucumber coverage for empty-search alerts, validation errors, and guest redirects so the user stories graders requested are now executable specs (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/answers/add_answer.feature`).
 - Locked down the post form behind authentication and documented the behavior so unauthenticated users see the SSO screen before posting (`config/routes.rb:22-33`, `features/posts/create_post.feature`).
-- Ensured post/comment deletion buttons continue to use confirmation prompts via Turbo `data-turbo_confirm`, matching the “confirmation guardrails” mentioned in the README (`app/views/posts/show.html.erb:61-70`).
+- Ensured post/answer deletion buttons continue to use confirmation prompts via Turbo `data-turbo_confirm`, matching the “confirmation guardrails” mentioned in the README (`app/views/posts/show.html.erb:61-70`).
 
 ## Repository Map (key folders)
 ```text
@@ -141,11 +143,11 @@ CU_Blueboard/
 │   ├── controllers/
 │   │   ├── application_controller.rb   # Global Devise auth hook
 │   │   ├── posts_controller.rb         # Post CRUD + search
-│   │   ├── comments_controller.rb      # Comment create/destroy
+│   │   ├── answers_controller.rb       # Answer create/destroy/accept
 │   │   └── likes_controller.rb         # Like toggle endpoints
 │   ├── models/
 │   │   ├── post.rb                     # Post validations + search helper
-│   │   ├── comment.rb                  # Comment validations
+│   │   ├── answer.rb                   # Answer validations + reveal support
 │   │   ├── like.rb                     # Like uniqueness + associations
 │   │   └── user.rb                     # Devise user with anonymous handle
 │   ├── views/posts/                    # Index/show/new templates & shared form partial
@@ -158,12 +160,12 @@ CU_Blueboard/
 │   ├── initializers/devise.rb          # Devise configuration
 │   └── initializers/simple_form.rb     # SimpleForm theme overrides
 ├── db/
-│   ├── migrate/                        # Devise users + posts/comments/likes tables
+│   ├── migrate/                        # Devise users + posts/answers/likes tables
 │   └── schema.rb                       # Current SQLite schema
 ├── docs/
 │   └── proposal.txt                    # Iteration proposal document
 ├── features/
-│   ├── comments/add_comment.feature    # Cucumber scenario for commenting
+│   ├── answers/add_answer.feature      # Cucumber scenario for answering
 │   ├── posts/browse_posts.feature      # Browse & search flow with anonymity check
 │   ├── posts/create_post.feature       # Signup + post creation flow
 │   ├── posts/like_post.feature         # Like/unlike toggle flow
@@ -171,9 +173,9 @@ CU_Blueboard/
 │   └── support/env.rb                  # Cucumber+DatabaseCleaner setup
 ├── lib/tasks/cucumber.rake             # Rake tasks for Cucumber profiles
 ├── spec/
-│   ├── factories/{users,posts,comments,likes}.rb # FactoryBot fixtures
-│   ├── models/{post,comment,like,user}_spec.rb   # Model specs
-│   ├── requests/{posts,comments,likes}_spec.rb   # Authorization specs
+│   ├── factories/{users,posts,answers,likes}.rb # FactoryBot fixtures
+│   ├── models/{post,answer,like,user}_spec.rb   # Model specs
+│   ├── requests/{posts,answers,likes}_spec.rb   # Authorization specs
 │   ├── helpers/application_helper_spec.rb        # Helper method specs
 │   └── rails_helper.rb                           # RSpec + Devise/Test helpers config
 ├── simplecov_setup.rb                 # SimpleCov configuration

@@ -11,6 +11,17 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
+  create_table "answers", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.boolean "show_real_identity", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["post_id"], name: "index_answers_on_post_id"
+    t.index ["user_id"], name: "index_answers_on_user_id"
+  end
+
   create_table "audit_logs", force: :cascade do |t|
     t.string "action", null: false
     t.integer "auditable_id", null: false
@@ -25,17 +36,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
-  create_table "comments", force: :cascade do |t|
-    t.text "body"
-    t.datetime "created_at", null: false
-    t.integer "post_id", null: false
-    t.boolean "show_real_identity", default: false, null: false
-    t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
-    t.index ["post_id"], name: "index_comments_on_post_id"
-    t.index ["user_id"], name: "index_comments_on_user_id"
-  end
-
   create_table "likes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
@@ -46,14 +46,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
   end
 
   create_table "posts", force: :cascade do |t|
+    t.integer "accepted_answer_id"
     t.text "body"
     t.datetime "created_at", null: false
     t.datetime "expires_at"
+    t.datetime "locked_at"
     t.boolean "show_real_identity", default: false, null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.index ["accepted_answer_id"], name: "index_posts_on_accepted_answer_id"
     t.index ["expires_at"], name: "index_posts_on_expires_at"
+    t.index ["locked_at"], name: "index_posts_on_locked_at"
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
@@ -92,12 +96,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "answers", "posts"
+  add_foreign_key "answers", "users"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "audit_logs", "users", column: "performed_by_id"
-  add_foreign_key "comments", "posts"
-  add_foreign_key "comments", "users"
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
+  add_foreign_key "posts", "answers", column: "accepted_answer_id"
   add_foreign_key "posts", "users"
   add_foreign_key "thread_identities", "posts"
   add_foreign_key "thread_identities", "users"

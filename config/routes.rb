@@ -22,11 +22,13 @@ Rails.application.routes.draw do
   resources :posts do
     member do
       patch :reveal_identity
+      patch :unlock
     end
 
-    resources :comments, only: [:create, :destroy] do
+    resources :answers, only: [:create, :destroy] do
       member do
         patch :reveal_identity
+        patch :accept
       end
     end
     resources :likes, only: [:create, :destroy]

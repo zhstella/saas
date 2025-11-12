@@ -399,6 +399,11 @@ body {
   border-radius: 8px;
   padding: 16px 20px;
 }
+
+.comment-card.accepted-answer {
+  border-color: #2F855A;
+  background-color: #F0FFF4;
+}
 .comment-meta {
   font-size: 0.875rem;
   color: #555;
@@ -439,13 +444,13 @@ body {
 }
 
 /* ======================================= */
-/* 10. 评论表单切换                       */
+/* 10. 回答表单切换                       */
 /* ======================================= */
-[data-post-show-target="commentForm"] {
+[data-post-show-target="answerForm"] {
   display: none;
 }
 
-[data-post-show-target="commentForm"].visible {
+[data-post-show-target="answerForm"].visible {
   display: block;
 }
 

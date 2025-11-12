@@ -1,17 +1,10 @@
-<%# 
-  !! -------------------------------- !!
-  !!      这是【已修复】的 show.html.erb     !!
-  !!  (使用 Stimulus Controller)       !!
-  !! -------------------------------- !!
+<%#
+  帖子详情页: 展示问题、所有回答、以及匿名/揭示身份等功能
 %>
 
-<%# 
-  !! 更改 1: 
-     我们在这里 "连接" (connect) 了新的 controller
-%>
 <div class="main-content-container" data-controller="post-show">
 
-  <%# --- 1. 帖子内容 --- %>
+  <%# --- 帖子标题与作者信息 --- %>
   <h2 class="page-title"><%= @post.title %></h2>
   <div class="post-meta">
     <span class="post-author">
@@ -24,136 +17,154 @@
     <p class="identity-badge">Expires <%= time_ago_in_words(@post.expires_at) %> from now</p>
   <% end %>
 
+  <% if @post.locked? %>
+    <p class="identity-badge">Thread locked after accepting an answer.</p>
+    <% if @post.user == current_user %>
+      <%= button_to 'Reopen Thread',
+                    unlock_post_path(@post),
+                    method: :patch,
+                    class: 'form-submit-button identity-button',
+                    data: { turbo_confirm: 'Reopen this thread and allow new answers?' } %>
+    <% end %>
+  <% end %>
+
   <% if current_user == @post.user && !@post.show_real_identity? %>
     <div class="identity-controls">
-      <%= button_to "Reveal My Identity", 
-                    reveal_identity_post_path(@post), 
-                    method: :patch, 
-                    class: "form-submit-button identity-button", 
+      <%= button_to "Reveal My Identity",
+                    reveal_identity_post_path(@post),
+                    method: :patch,
+                    class: "form-submit-button identity-button",
                     data: { turbo_confirm: "Reveal your real identity on this thread?" } %>
     </div>
   <% elsif @post.show_real_identity? %>
     <p class="identity-badge">Author chose to reveal their identity.</p>
   <% end %>
+
   <div class="post-body">
     <%= @post.body %>
   </div>
 
-  <%# --- 2. 帖子操作 (Like / Delete) --- %>
+  <%# --- 帖子操作 (点赞 / 回答按钮) --- %>
   <div class="post-actions">
-    
+
     <div class="post-actions-left">
       <% if user_signed_in? %>
         <% if @post.liked_by?(current_user) %>
-          <%= button_to "Unlike (👍 #{@post.likes.count})", 
-                        post_like_path(@post, @post.find_like_by(current_user)), 
-                        method: :delete, 
+          <%= button_to "Unlike (👍 #{@post.likes.count})",
+                        post_like_path(@post, @post.find_like_by(current_user)),
+                        method: :delete,
                         class: "form-cancel-button" %>
         <% else %>
-          <%= button_to "Like (👍 #{@post.likes.count})", 
-                        post_likes_path(@post), 
-                        method: :post, 
+          <%= button_to "Like (👍 #{@post.likes.count})",
+                        post_likes_path(@post),
+                        method: :post,
                         class: "form-cancel-button" %>
         <% end %>
       <% else %>
         <span class="form-cancel-button disabled">👍 <%= @post.likes.count %></span>
       <% end %>
 
-      <%= link_to "Comments (#{ @post.comments.count })", "#", 
+      <%= link_to "Answers (#{ @answers.count })", "#",
                   class: "form-cancel-button",
-                  data: { action: "click->post-show#toggleCommentForm" } %>
+                  data: { action: "click->post-show#toggleAnswerForm" } %>
     </div>
 
     <% if @post.user == current_user %>
-      <%= button_to "Delete This Post", @post, 
-                  method: :delete, 
+      <%= button_to "Delete This Post", @post,
+                  method: :delete,
                   class: "btn-destructive",
                   data: { turbo_confirm: "Are you sure..." } %>
     <% end %>
   </div>
-  
+
   <hr class="section-divider">
 
-  <%# 
-    !! 更改 3: 
-       (a) 我们删除了旧的 'id'
-       (b) 我们添加了一个 'data-post-show-target'
-       这会告诉 Stimulus: 
-       "这个 div 就是你正在寻找的 'commentForm' 目标"
-  %>
-  <div data-post-show-target="commentForm">
-    
-    <%# --- 3. 新评论表单 (现在在 Wrapper 内部) --- %>
-    <h3 class="comments-title">Add Your Comment</h3>
-    
-    <%= form_with(model: [@post, @comment]) do |form| %>
-      <% if @comment.errors.any? %>
-        <div class="form-errors">
-          <% @comment.errors.full_messages.each do |message| %>
-            <p class="error-message"><%= message %></p>
-          <% end %>
+  <%# --- 回答表单 --- %>
+  <div data-post-show-target="answerForm">
+    <% if @post.locked? %>
+      <p class="identity-badge">This thread is locked. No new answers can be added.</p>
+    <% else %>
+      <h3 class="comments-title">Share Your Answer</h3>
+
+      <%= form_with(model: [@post, @answer]) do |form| %>
+        <% if @answer.errors.any? %>
+          <div class="form-errors">
+            <% @answer.errors.full_messages.each do |message| %>
+              <p class="error-message"><%= message %></p>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="form-field">
+          <%= form.label :body, "Answer Content", class: "form-label" %>
+          <%= form.text_area :body, class: "form-textarea", rows: 4, placeholder: "Share your guidance..." %>
+        </div>
+        <div class="form-actions">
+          <%= form.submit "Submit Answer", class: "form-submit-button" %>
         </div>
       <% end %>
-      <div class="form-field">
-        <%= form.label :body, "Comment Content", class: "form-label" %>
-        <%= form.text_area :body, class: "form-textarea", rows: 4, placeholder: "Type your comment here..." %>
-      </div>
-      <div class="form-actions">
-        <%= form.submit "Submit Comment", class: "form-submit-button" %>
-      </div>
     <% end %>
 
     <hr class="section-divider">
   </div>
 
-  <%# --- 4. 评论列表 --- %>
-  <h3 class="comments-title">Comments (<%= @post.comments.count %>)</h3>
+  <%# --- 回答列表 --- %>
+  <h3 class="comments-title">Answers (<%= @answers.count %>)</h3>
 
-  <div class="comments-list-container" id="comments">
-    <% @post.comments.each do |comment| %>
-      <% next unless comment.persisted? %>
-      <div class="comment-card">
+  <div class="comments-list-container" id="answers">
+    <% @answers.each do |answer| %>
+      <% next unless answer.persisted? %>
+      <% accepted = (@post.accepted_answer_id == answer.id) %>
+      <div class="comment-card <%= 'accepted-answer' if accepted %>">
 
-        <%# 评论作者和时间 %>
         <div class="comment-meta">
           <span class="comment-author">
-            <strong><%= display_author(comment.user, context: comment) %></strong>
+            <strong><%= display_author(answer.user, context: answer) %></strong>
           </span>
           <span class="comment-time">
-            <% if comment.created_at.present? %>
-              <%= time_ago_in_words(comment.created_at) %> ago
+            <% if answer.created_at.present? %>
+              <%= time_ago_in_words(answer.created_at) %> ago
             <% else %>
               just now
             <% end %>
           </span>
+          <% if accepted %>
+            <span class="identity-badge">Accepted answer</span>
+          <% end %>
         </div>
 
-        <%# 评论正文 %>
         <div class="comment-body">
-          <%= comment.body %>
+          <%= answer.body %>
         </div>
 
-        <%# 删除评论的链接 %>
-        <% if comment.user == current_user %>
-          <div class="comment-actions">
-            <%= button_to "Delete Comment", [@post, comment], 
-                        method: :delete, 
+        <div class="comment-actions">
+          <% if @post.user == current_user && !@post.locked? %>
+            <%= button_to "Accept Answer",
+                          accept_post_answer_path(@post, answer),
+                          method: :patch,
+                          class: "comment-reveal-button",
+                          data: { turbo_confirm: "Accept this answer and lock the thread?" } %>
+          <% elsif accepted && @post.user == current_user %>
+            <span class="identity-badge">This answer is locked in.</span>
+          <% end %>
+
+          <% if answer.user == current_user %>
+            <%= button_to "Delete Answer", [@post, answer],
+                        method: :delete,
                         class: "comment-delete-link",
                         data: { turbo_confirm: "Are you sure?" } %>
-            <% unless comment.show_real_identity? %>
-              <%= button_to "Reveal My Identity", 
-                            reveal_identity_post_comment_path(@post, comment), 
-                            method: :patch, 
-                            class: "comment-reveal-button", 
-                            data: { turbo_confirm: "Reveal your identity on this comment?" } %>
+            <% if answer.show_real_identity? %>
+              <span class="identity-badge">Answerer revealed their identity.</span>
+            <% else %>
+              <%= button_to "Reveal My Identity",
+                            reveal_identity_post_answer_path(@post, answer),
+                            method: :patch,
+                            class: "comment-reveal-button",
+                            data: { turbo_confirm: "Reveal your identity on this answer?" } %>
             <% end %>
-          </div>
-          <% if comment.show_real_identity? %>
-            <span class="identity-badge">Commenter revealed their identity.</span>
+          <% elsif answer.show_real_identity? %>
+            <span class="identity-badge">Answerer revealed their identity.</span>
           <% end %>
-        <% elsif comment.show_real_identity? %>
-          <span class="identity-badge">Commenter revealed their identity.</span>
-        <% end %>
+        </div>
       </div>
     <% end %>
   </div>

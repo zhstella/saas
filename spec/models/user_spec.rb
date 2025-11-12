@@ -40,8 +40,8 @@ RSpec.describe User, type: :model do
       expect(association.options[:dependent]).to eq(:destroy)
     end
 
-    it 'has many comments' do
-      association = described_class.reflect_on_association(:comments)
+    it 'has many answers' do
+      association = described_class.reflect_on_association(:answers)
       expect(association.macro).to eq(:has_many)
       expect(association.options[:dependent]).to eq(:destroy)
     end
@@ -62,14 +62,14 @@ RSpec.describe User, type: :model do
       }.to change(Post, :count).by(-2)
     end
 
-    it 'destroys associated comments when user is destroyed' do
+    it 'destroys associated answers when user is destroyed' do
       user = create(:user)
       post = create(:post)
-      create(:comment, user: user, post: post)
+      create(:answer, user: user, post: post)
 
       expect {
         user.destroy
-      }.to change(Comment, :count).by(-1)
+      }.to change(Answer, :count).by(-1)
     end
 
     it 'destroys associated likes when user is destroyed' do

@@ -4,13 +4,13 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
 
   // 1. 定义这个 controller 需要操作的 "目标" (target)
-  //    我们将把那个隐藏的 div 命名为 "commentForm"
-  static targets = [ "commentForm" ]
+  //    我们将把那个隐藏的 div 命名为 "answerForm"
+  static targets = [ "answerForm" ]
 
-  // 2. 这是我们将从 "Comments" 按钮调用的函数
-  toggleCommentForm() {
+  // 2. 这是我们将从 "Answers" 按钮调用的函数
+  toggleAnswerForm() {
 
-    // 3. 切换那个隐藏 div (commentFormTarget) 上的 'visible' class
-    this.commentFormTarget.classList.toggle('visible');
+    // 3. 切换那个隐藏 div (answerFormTarget) 上的 'visible' class
+    this.answerFormTarget.classList.toggle('visible');
   }
 }

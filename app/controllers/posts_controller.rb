@@ -1,6 +1,7 @@
 class PostsController < ApplicationController
-  before_action :set_post, only: [ :show, :destroy, :reveal_identity ]
+  before_action :set_post, only: [ :show, :destroy, :reveal_identity, :unlock ]
   before_action :ensure_active_post, only: [ :show, :reveal_identity ]
+  before_action :authorize_owner!, only: [ :unlock ]
 
   # GET /posts
   def index
@@ -19,7 +20,8 @@ class PostsController < ApplicationController
 
   # GET /posts/1
   def show
-    @comment = Comment.new
+    @answer = Answer.new
+    @answers = @post.answers.includes(:user).order(created_at: :asc)
   end
 
   # GET /posts/new
@@ -61,6 +63,15 @@ class PostsController < ApplicationController
     end
   end
 
+  def unlock
+    if @post.locked? && @post.accepted_answer.present?
+      @post.unlock!
+      redirect_to @post, notice: 'Thread reopened.'
+    else
+      redirect_to @post, alert: 'No accepted answer to unlock.'
+    end
+  end
+
   private
 
   def set_post
@@ -82,5 +93,11 @@ class PostsController < ApplicationController
     return if @post.expires_at.blank? || @post.expires_at.future?
 
     redirect_to posts_path, alert: 'This post has expired.'
+  end
+
+  def authorize_owner!
+    return if @post.user == current_user
+
+    redirect_to @post, alert: 'You do not have permission to manage this thread.'
   end
 end

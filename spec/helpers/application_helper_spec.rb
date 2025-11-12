@@ -43,11 +43,11 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(result).to eq(post_record.user.email)
     end
 
-    it 'handles comment contexts via their post' do
-      comment = create(:comment, post: post_record)
+    it 'handles answer contexts via their post' do
+      answer = create(:answer, post: post_record)
 
-      identity = ThreadIdentity.for(comment.user, post_record)
-      expect(helper.display_author(comment.user, context: comment)).to eq(identity.pseudonym)
+      identity = ThreadIdentity.for(answer.user, post_record)
+      expect(helper.display_author(answer.user, context: answer)).to eq(identity.pseudonym)
     end
   end
 end

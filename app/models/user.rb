@@ -8,7 +8,7 @@ class User < ApplicationRecord
 
   # 2. 你的数据关联
   has_many :posts, dependent: :destroy
-  has_many :comments, dependent: :destroy
+  has_many :answers, dependent: :destroy
   has_many :likes, dependent: :destroy
   has_many :thread_identities, dependent: :destroy
   has_many :audit_logs, dependent: :destroy
