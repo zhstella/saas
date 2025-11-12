@@ -1,36 +1,37 @@
-<h1>CU Blue Board</h1>
-<%= link_to "New Post", new_post_path %>
+<div class="main-content-container" id="index-page-container">
 
-<hr>
-
-<h2>Search Posts</h2>
-<%= form_with(url: posts_path, method: :get, local: true) do |f| %>
-  <%= f.label :query, "Search:" %>
-  <%= f.text_field :query, value: params[:query] %>
-  <%= f.submit "Search" %>
-<% end %>
-
-<hr>
-
-<h2>Post List</h2>
-<div id="posts">
-  <% @posts.each do |post| %>
-    <div>
-      <h3>
-        <%= link_to post.title, post_path(post) %>
-      </h3>
-      <p>
-        Posted by: <%= display_author(post.user) %>
-      </p>
-      <p>
-        <span>👍 <%= post.likes.count %></span> | 
-        <span>💬 <%= post.comments.count %></span>
-      </p>
-
-      <% if current_user == post.user %>
-        <%= button_to "Delete Post", post_path(post), method: :delete, data: { confirm: 'Are you sure?' } %>
+  <%# --- 1. 操作栏 --- %>
+  <div class="action-bar-container">
+    
+    <%= form_with(url: posts_path, method: :get, class: "action-bar-search") do |form| %>
+      <%= form.text_field :search, placeholder: "Search Posts" %>
+      <button type="submit" class="search-button">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+      </button>
+    <% end %>
+    
+    <%= link_to "Submit a Post", new_post_path, class: "btn-submit-question" %>
+    
+  </div>
+  
+  <%# --- 2. "Post List" 标题 --- %>
+  <h2 class="post-list-title">Post List</h2>
+  
+  <div id="posts">
+    <% @posts.each do |post| %>
+      <%= link_to post_path(post), class: "post-card" do %>
+        <div class="post-card-content">
+          <h3 class="post-card-title"><%= post.title %></h3>
+          
+          <div class="post-card-meta">
+            <span class="meta-author">By: <%= post.user.email %></span>
+            <span class="meta-time"><%= time_ago_in_words(post.created_at) %> ago</span>
+          </div>
+        </div>
       <% end %>
-    </div>
-    <hr>
-  <% end %>
+    <% end %>
+  </div>
+  
 </div>

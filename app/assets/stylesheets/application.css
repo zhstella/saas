@@ -4,14 +4,14 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
-
 /* ======================================= */
-/* 1. 全局 Body 样式 (新添加)            */
+/* 1. 全局 Body 样式                       */
 /* ======================================= */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #ffffff;
+  overflow-x: hidden; /* 修复滚动条白边 */
+  background-color: #ffffff; /* 滚动到底部时的后备颜色 */
 }
 
 /* ======================================= */
@@ -21,30 +21,22 @@ body {
   display: flex;
   justify-content: space-between; 
   align-items: center;
-
   width: 100%;
   margin: 0;
   max-width: none; 
   background-color: white;   
   border-bottom: 1px solid #e0e0e0; 
   padding: 12px 48px; 
-
   box-sizing: border-box; 
   position: fixed; /* 固定在屏幕顶部 */
   top: 0;
   left: 0;
   z-index: 10;
 }
-
-/* 这会强制 "My threads" 和 "Logout" 在同一行
-*/
 .header-nav {
   display: flex;
   align-items: center;
 }
-
-/* <a href> ("My threads", "About") 的统一样式
-*/
 .header-nav a {
   color: #555;
   text-decoration: none;
@@ -52,43 +44,29 @@ body {
   font-size: 1rem;
   margin-left: 20px;
   text-shadow: none;
-  
   background: none;
   border: none;
   padding: 0;
   line-height: inherit;
 }
-
-/* <button_to> ("Logout") 的统一样式
-*/
 .header-nav .nav-logout-button {
-  /* 重置按钮样式 */
   background: none;
   border: none;
   padding: 0;
   margin: 0;
-  
-  /* 匹配 <a> 标签的样式 */
   color: #555;
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
   font-family: inherit;
   margin-left: 20px;
-  
   cursor: pointer;
 }
-
-/* 你的新 Hover 效果
-*/
 .header-nav a:hover,
 .header-nav .nav-logout-button:hover {
   color: #004B8D;
   text-decoration: none;
 }
-
-
-/* --- Logo 样式 --- */
 .header-logo-group {
   display: flex;
   align-items: center;
@@ -114,6 +92,15 @@ body {
   color: #005EAD; 
 }
 
+.header-logo-link {
+  text-decoration: none; /* 移除下划线 */
+  color: inherit; /* 继承子元素 (logo-text) 的颜色 */
+}
+
+.header-logo-link:hover {
+  text-decoration: none; /* 确保悬停时也没有下划线 */
+}
+
 /* ======================================= */
 /* 3. Header Flash 消息                  */
 /* ======================================= */
@@ -123,7 +110,6 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1000;
-  
   width: 100%;
   max-width: 500px;
   display: flex;
@@ -131,7 +117,6 @@ body {
   align-items: center;
   gap: 8px;
 }
-
 .header-flash {
   padding: 10px 16px;
   border-radius: 6px;
@@ -139,38 +124,342 @@ body {
   font-weight: 500;
   transition: opacity 0.5s ease-in-out;
 }
-
 .header-flash.fade-out {
   opacity: 0;
 }
-
 .flash-notice {
   color: #3C763D;
   background-color: #DFF0D8;
   border: 1px solid #D6E9C6;
 }
-
 .flash-alert {
   color: #A94442;
   background-color: #F2DEDE;
   border: 1px solid #EBCCD1;
 }
 
-
 /* ======================================= */
-/* 4. 主内容区域 (已修复)                */
+/* 4. 主内容区域 (app-main-content)         */
 /* ======================================= */
 .app-main-content {
   /* 为固定的 Header 腾出空间 */
   padding-top: 64px;
-
-  /* 确保内容区域至少填满整个屏幕的高度 */
   min-height: 100vh;
   box-sizing: border-box; 
+  /* 背景图已移至 application.html.erb */
+}
 
-  /* !! 注意 !!
-    背景图 (background-image) 样式已从这里移除，
-    并被移回到了 application.html.erb 中，
-    因为它必须使用 ERB 助手。
-  */
+/* ======================================= */
+/* 5. 主内容 "白色卡片" 容器           */
+/* ======================================= */
+.main-content-container {
+  width: 90%;
+  max-width: 1200px; 
+  margin: 32px auto;
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px 24px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.action-bar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.action-bar-search {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  flex-grow: 1; 
+  margin-right: 16px;
+}
+.action-bar-search input[type="text"] {
+  flex-grow: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 16px 20px; /* 增高后的 padding */
+  font-size: 1rem;
+}
+.action-bar-search .search-button {
+  background: transparent;
+  border: none;
+  padding: 0 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.action-bar-search .search-icon {
+  width: 20px;
+  height: 20px;
+  stroke: #6B7280;
+}
+.btn-submit-question {
+  background-color: #2a4a75;
+  color: white;
+  border-radius: 8px;
+  padding: 16px 24px; /* 增高/增宽后的 padding */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  white-space: nowrap; 
+  transition: background-color 0.2s;
+}
+.btn-submit-question:hover {
+  background-color: #223a5e;
+}
+
+/* ======================================= */
+/* 6. 帖子列表 (Post List)               */
+/* ======================================= */
+.post-list-title {
+  font-size: 1.75rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+#posts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.post-card {
+  display: block;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease-in-out;
+}
+.post-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+.post-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+.post-card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: #555;
+}
+.post-card-meta .meta-author {
+  font-weight: 500;
+}
+
+/* ======================================= */
+/* 7. 帖子表单 (New Post)                */
+/* ======================================= */
+.page-title {
+  font-size: 1.75rem;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.form-field {
+  margin-bottom: 20px;
+}
+.form-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 16px 16px; /* 增高后的 Title */
+  border-radius: 8px;
+  border: 1px solid #D1D5DB;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.form-textarea {
+  min-height: 150px;
+  resize: none; /* JS 自动生长 */
+  overflow: hidden; /* JS 自动生长 */
+}
+.form-submit-button {
+  background-color: #2a4a75;
+  color: white;
+  border-radius: 8px;
+  padding: 16px 24px; 
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.form-submit-button:hover {
+  background-color: #223a5e;
+}
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px; 
+  justify-content: flex-end; /* 按钮靠右 */
+}
+.form-cancel-button {
+  padding: 14px 22px; 
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 1rem;
+  text-decoration: none;
+  background-color: transparent;
+  color: #2a4a75;
+  border: 2px solid #2a4a75;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.form-cancel-button:hover {
+  background-color: #2a4a75;
+  color: white;
+  text-decoration: none;
+}
+
+/* ======================================= */
+/* 9. Post Show 页面样式                 */
+/* ======================================= */
+.post-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: #555;
+  margin-top: -16px;
+  margin-bottom: 24px;
+}
+.post-author strong {
+  color: #004B8D;
+}
+.post-body {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+.post-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 24px;
+  justify-content: space-between;
+}
+
+.btn-destructive {
+  /* 匹配 "Cancel" 按钮的形状和大小，以便对齐 */
+  padding: 14px 22px; /* (16px padding - 2px border) */
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 1rem;
+  text-decoration: none;
+
+  /* "幽灵"按钮的样式 */
+  background-color: transparent;
+  color: #D9534F; /* 红色文字 */
+  border: 2px solid #D9534F; /* 红色边框 */
+
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.btn-destructive:hover {
+  background-color: #D9534F; /* 填充红色 */
+  color: white; /* 文字变白 */
+  text-decoration: none;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid #EEE;
+  margin: 32px 0;
+}
+.comments-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+.comments-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.comment-card {
+  background-color: #F9F9F9;
+  border: 1px solid #EEE;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+.comment-meta {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+.comment-author {
+  font-weight: 600;
+}
+.comment-author strong {
+  color: #004B8D;
+}
+.comment-time {
+  margin-left: 8px;
+  font-weight: 400;
+  color: #777;
+}
+.comment-body {
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.5;
+}
+.comment-actions {
+  margin-top: 12px;
+}
+.comment-delete-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #D9534F;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+.comment-delete-link:hover {
+  text-decoration: underline;
+}
+
+/* ======================================= */
+/* 10. 评论表单切换                       */
+/* ======================================= */
+#new-comment-section {
+  display: none;
+}
+#new-comment-section.visible {
+  display: block;
+}
+
+
+/* ======================================= */
+/* 11. 主页特定样式 (新添加)             */
+/* ======================================= */
+#index-page-container {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.post-actions-left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }

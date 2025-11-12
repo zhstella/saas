@@ -6,22 +6,26 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%# 加载你自己的 application.css %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
 
+    <%# 
+      !! -------------------------------- !!
+      !!      这是【已修复】的背景图样式         !!
+      !!  (这个 <style> 块现在被加回来了)   !!
+      !! -------------------------------- !!
+    %>
     <style>
-      .app-main-content {
-        /* 1. 85% 不透明度的白色遮罩 (为了易读性) */
-        background-image: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+      body:not(.login-page) {
+        /* 1. 70% 不透明度的白色遮罩 (为了易读性) */
+        background-image: linear-gradient(rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.70)),
                           
         /* 2. 你的背景图 (使用 ERB 助手) */
                           url('<%= asset_path 'backgrounds/columbia_butler_day.jpg' %>'); 
 
-        /* --- 辅助样式 --- */
         background-size: cover;
         background-position: center center;
-        background-attachment: fixed; /* 关键: 滚动时背景固定不动 */
+        background-attachment: fixed;
         background-repeat: no-repeat;
       }
     </style>
@@ -34,14 +38,32 @@
       
       <header class="login-header">
         
-        <%# ... (你的 Header 内容保持不变) ... %>
-        <div class="header-logo-group">
-          <%= image_tag 'logos/cubb_owl.jpg', alt: 'CU BlueBoard Logo', class: 'logo-owl' %>
-          <div class="logo-text">
-            <span class="logo-main-text">CU BlueBoard</span>
-            <span class="logo-sub-text">Columbia & Barnard</span>
+        <%# 
+          这是你新添加的、正确的 Logo 链接逻辑
+        %>
+        <%
+          # 1. 默认设置 (无确认)
+          logo_link_options = { class: "header-logo-link" }
+          
+          # 2. 检查我们是否在 "New Post" 页面
+          if controller_name == 'posts' && action_name == 'new'
+            # 3. 如果是，添加 onclick 确认
+            logo_link_options[:onclick] = "return confirm('Are you sure you want to cancel? Any unsaved changes will be lost.');"
+          end
+        %>
+        
+        <%# 4. 创建链接 %>
+        <%= link_to posts_path, logo_link_options do %>
+          <div class="header-logo-group">
+            <%= image_tag 'logos/cubb_owl.jpg', alt: 'CU BlueBoard Logo', class: 'logo-owl' %>
+            <div class="logo-text">
+              <span class="logo-main-text">CU BlueBoard</span>
+              <span class="logo-sub-text">Columbia & Barnard</span>
+            </div>
           </div>
-        </div>
+        <% end %>
+        
+        <%# --- 2. 居中的 Flash 消息 --- %>
         <div class="header-flash-container">
           <% if notice.present? %>
             <div class="header-flash flash-notice"><%= notice %></div>
@@ -50,6 +72,8 @@
             <div class="header-flash flash-alert"><%= alert %></div>
           <% end %>
         </div>
+
+        <%# --- 3. 右侧 Nav --- %>
         <nav class="header-nav">
           <a href="#">My threads</a>
           <%= button_to 'Logout', destroy_user_session_path, 
@@ -59,6 +83,7 @@
         </nav>
       </header>
 
+      <%# --- 主内容容器 --- %>
       <main class="app-main-content">
         <%= yield %>
       </main>
@@ -68,10 +93,14 @@
       <%= yield %>
     <% end %>
 
-    <%# --- Flash 消息淡出脚本 (保持不变) --- %>
+    <%# --- 
+      这是【必须】的 JavaScript
+      (包含 Flash, Textarea, 和评论切换)
+    --- %>
     <script>
-      document.addEventListener("turbo:load", function() {
-        // ... (你的 JS 脚本保持不变) ...
+      function setupPageScripts() {
+        
+        // --- 1. Flash 消息淡出逻辑 ---
         const flashElements = document.querySelectorAll(".header-flash");
         if (flashElements.length > 0) {
           flashElements.forEach(function(flashElement) {
@@ -83,7 +112,35 @@
             }, 3000); 
           });
         }
-      });
+
+        // --- 2. 自动生长的 Textarea ---
+        const textareas = document.querySelectorAll(".form-textarea");
+        function autoResizeTextarea(textarea) {
+          if (textarea) { 
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+          }
+        }
+        textareas.forEach(textarea => {
+          textarea.addEventListener('input', () => {
+            autoResizeTextarea(textarea);
+          });
+          autoResizeTextarea(textarea);
+        });
+        
+        // --- 3. "Add Comment" 表单切换 ---
+        const toggleBtn = document.getElementById("toggle-comment-form-btn");
+        const commentSection = document.getElementById("new-comment-section");
+
+        if (toggleBtn && commentSection) {
+          toggleBtn.addEventListener('click', function(event) {
+            event.preventDefault(); 
+            commentSection.classList.toggle('visible');
+          }); 
+        } 
+      } // end of setupPageScripts
+
+      document.addEventListener("turbo:load", setupPageScripts);
     </script>
   </body>
 </html>
