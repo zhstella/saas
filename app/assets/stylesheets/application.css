@@ -441,10 +441,11 @@ body {
 /* ======================================= */
 /* 10. 评论表单切换                       */
 /* ======================================= */
-#new-comment-section {
+[data-post-show-target="commentForm"] {
   display: none;
 }
-#new-comment-section.visible {
+
+[data-post-show-target="commentForm"].visible {
   display: block;
 }
 

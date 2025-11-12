@@ -10,10 +10,7 @@
     <%= javascript_importmap_tags %>
 
     <%# 
-      !! -------------------------------- !!
-      !!      这是【已修复】的背景图样式         !!
-      !!  (这个 <style> 块现在被加回来了)   !!
-      !! -------------------------------- !!
+      这是【必须】的背景图样式
     %>
     <style>
       body:not(.login-page) {
@@ -38,24 +35,24 @@
       
       <header class="login-header">
         
-        <%# 
-          这是你新添加的、正确的 Logo 链接逻辑
-        %>
+        <%# Logo 链接 (带 onclick 确认) %>
         <%
-          # 1. 默认设置 (无确认)
           logo_link_options = { class: "header-logo-link" }
-          
-          # 2. 检查我们是否在 "New Post" 页面
           if controller_name == 'posts' && action_name == 'new'
-            # 3. 如果是，添加 onclick 确认
             logo_link_options[:onclick] = "return confirm('Are you sure you want to cancel? Any unsaved changes will be lost.');"
           end
         %>
         
-        <%# 4. 创建链接 %>
         <%= link_to posts_path, logo_link_options do %>
           <div class="header-logo-group">
             <%= image_tag 'logos/cubb_owl.jpg', alt: 'CU BlueBoard Logo', class: 'logo-owl' %>
+            
+            <%# 
+              !! ------------------------------ !!
+              !!    这是【已修复】的 HTML 语法    !!
+              !! ------------------------------ !!
+              (class. 已经改回了 class=)
+            %>
             <div class="logo-text">
               <span class="logo-main-text">CU BlueBoard</span>
               <span class="logo-sub-text">Columbia & Barnard</span>
@@ -93,10 +90,13 @@
       <%= yield %>
     <% end %>
 
-    <%# --- 
-      这是【必须】的 JavaScript
-      (包含 Flash, Textarea, 和评论切换)
-    --- %>
+    <%# 
+      !! -------------------------------- !!
+      !!      这是【已清理】的 JavaScript     !!
+      !! -------------------------------- !!
+      (评论切换功能现在由 Stimulus controller 处理,
+       所以这里只保留 Flash 和 Textarea 逻辑)
+    %>
     <script>
       function setupPageScripts() {
         
@@ -127,20 +127,11 @@
           });
           autoResizeTextarea(textarea);
         });
-        
-        // --- 3. "Add Comment" 表单切换 ---
-        const toggleBtn = document.getElementById("toggle-comment-form-btn");
-        const commentSection = document.getElementById("new-comment-section");
-
-        if (toggleBtn && commentSection) {
-          toggleBtn.addEventListener('click', function(event) {
-            event.preventDefault(); 
-            commentSection.classList.toggle('visible');
-          }); 
-        } 
-      } // end of setupPageScripts
-
+      }
+      // 监听 Turbo 页面加载
       document.addEventListener("turbo:load", setupPageScripts);
+
+      // (评论切换 JS 已被移除，由 Stimulus 接管)
     </script>
   </body>
 </html>

@@ -1,8 +1,15 @@
 <%# 
-  !! 这是 app/views/posts/show.html.erb 的【更新版】内容 !!
+  !! -------------------------------- !!
+  !!      这是【已修复】的 show.html.erb     !!
+  !!  (使用 Stimulus Controller)       !!
+  !! -------------------------------- !!
 %>
 
-<div class="main-content-container">
+<%# 
+  !! 更改 1: 
+     我们在这里 "连接" (connect) 了新的 controller
+%>
+<div class="main-content-container" data-controller="post-show">
 
   <%# --- 1. 帖子内容 --- %>
   <h2 class="page-title"><%= @post.title %></h2>
@@ -21,14 +28,23 @@
     <%= @post.body %>
   </div>
 
-<%# --- 2. 帖子操作 --- %>
+  <%# --- 2. 帖子操作 (Like / Delete) --- %>
   <div class="post-actions">
-
+    
     <div class="post-actions-left">
       <%= link_to "Like (👍 0)", "#", class: "form-cancel-button" %>
-      <%= link_to "Comments (#{ @post.comments.count })", "#new-comment-section", 
-                  id: "toggle-comment-form-btn", 
-                  class: "form-cancel-button" %>
+
+      <%# 
+        !! 更改 2: 
+           (a) 我们删除了旧的 'id'
+           (b) 我们添加了一个 'data-action'
+           这会告诉 Stimulus:
+           "当这个按钮被 'click' 时, 
+            调用 'post-show' controller 上的 'toggleCommentForm' 函数"
+      %>
+      <%= link_to "Comments (#{ @post.comments.count })", "#", 
+                  class: "form-cancel-button",
+                  data: { action: "click->post-show#toggleCommentForm" } %>
     </div>
 
     <% if @post.user == current_user %>
@@ -41,7 +57,14 @@
   
   <hr class="section-divider">
 
-  <div id="new-comment-section">
+  <%# 
+    !! 更改 3: 
+       (a) 我们删除了旧的 'id'
+       (b) 我们添加了一个 'data-post-show-target'
+       这会告诉 Stimulus: 
+       "这个 div 就是你正在寻找的 'commentForm' 目标"
+  %>
+  <div data-post-show-target="commentForm">
     
     <%# --- 3. 新评论表单 (现在在 Wrapper 内部) --- %>
     <h3 class="comments-title">Add Your Comment</h3>
@@ -95,5 +118,4 @@
       </div>
     <% end %>
   </div>
-
 </div>
