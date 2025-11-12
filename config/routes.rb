@@ -20,7 +20,15 @@ Rails.application.routes.draw do
   # 3. 你的帖子、评论、点赞路由保持不变
   # 我们已经用上面的逻辑替换了旧的 'root "posts#index"'
   resources :posts do
-    resources :comments, only: [:create, :destroy]
+    member do
+      patch :reveal_identity
+    end
+
+    resources :comments, only: [:create, :destroy] do
+      member do
+        patch :reveal_identity
+      end
+    end
     resources :likes, only: [:create, :destroy]
   end
 end

@@ -8,4 +8,15 @@ Feature: Ask a new question
     When I create a post titled "Looking for roommates" with body "Anyone searching for off-campus roommates for fall?"
     Then I should see "Post was successfully created!"
     And I should see "Looking for roommates" on the page
-    And I should see "Anyone searching for off-campus roommates for fall?"
+    And I open the post titled "Looking for roommates"
+    Then I should see "Anyone searching for off-campus roommates for fall?"
+
+  Scenario: Student sees errors when required fields are missing
+    Given I register with email "student2@example.com" and password "Password123!"
+    When I try to create a post without a title
+    Then I should see "Title can't be blank"
+    And I should see "Body can't be blank"
+
+  Scenario: Guest must log in before accessing the post form
+    When I visit the new post page without logging in
+    Then I should see "LOG IN WITH UNIVERSITY SSO"

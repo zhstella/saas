@@ -17,4 +17,11 @@ RSpec.describe Comment, type: :model do
     expect(comment.post).to be_present
     expect(comment.user).to be_present
   end
+
+  it 'creates a thread identity after creation' do
+    comment = create(:comment)
+
+    identity = ThreadIdentity.find_by(user: comment.user, post: comment.post)
+    expect(identity).to be_present
+  end
 end

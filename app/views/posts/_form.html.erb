@@ -1,5 +1,13 @@
 <%= form_with(model: post) do |form| %>
 
+  <% if post.errors.any? %>
+    <div class="form-errors">
+      <% post.errors.full_messages.each do |message| %>
+        <p class="error-message"><%= message %></p>
+      <% end %>
+    </div>
+  <% end %>
+
   <div class="form-field">
     <%= form.label :title, class: "form-label" %>
     <%= form.text_field :title, class: "form-input", placeholder: "Enter your question title..." %>

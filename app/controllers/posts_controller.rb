@@ -1,5 +1,5 @@
 class PostsController < ApplicationController
-  before_action :set_post, only: [ :show, :destroy ]
+  before_action :set_post, only: [ :show, :destroy, :reveal_identity ]
 
   # GET /posts
   def index
@@ -52,6 +52,19 @@ class PostsController < ApplicationController
       redirect_to posts_url, notice: "Post deleted."
     else
       redirect_to @post, alert: "You do not have permission to delete this post."
+    end
+  end
+
+  def reveal_identity
+    if @post.user == current_user
+      if @post.update(show_real_identity: true)
+        AuditLog.record_identity_reveal(auditable: @post, actor: current_user)
+        redirect_to @post, notice: "Your identity is now visible on this thread."
+      else
+        redirect_to @post, alert: "Unable to reveal identity."
+      end
+    else
+      redirect_to @post, alert: "You do not have permission to reveal this identity."
     end
   end
 

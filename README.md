@@ -29,15 +29,29 @@
 
 ### Configure Google OAuth (first-time setup)
 1. Create a Google Cloud OAuth client (Web application) and add `http://localhost:3000/users/auth/google_oauth2/callback` as an authorized redirect URI.
-2. Store the credentials via Rails encrypted credentials so Devise can read them:
+2. Ensure you have the right master key for encrypted credentials. If you need to recreate them locally, remove the existing files and start fresh:
    ```bash
-   bin/rails credentials:edit
+   rm -f config/credentials.yml.enc config/master.key
    ```
+   Then open the editor of your choice. Pick one of these commands (remember to include `--wait` for editors that spawn a new window):
+   ```bash
+   # VS Code
+   VISUAL="code --wait" bin/rails credentials:edit
+
+   # nano (built into macOS)
+   VISUAL="nano" bin/rails credentials:edit
+
+   # vim
+   VISUAL="vim" bin/rails credentials:edit
+   ```
+   > Tip: if `code` isn’t available in your terminal, launch VS Code and run “Shell Command: Install 'code' command in PATH” from the Command Palette.
+   Paste your Google OAuth credentials under the `google_oauth2` key:
    ```yaml
    google_oauth2:
      client_id: YOUR_CLIENT_ID
      client_secret: YOUR_CLIENT_SECRET
    ```
+   Save and exit; Rails will regenerate both `config/credentials.yml.enc` and `config/master.key`. Share the new `master.key` securely with your teammates so they can decrypt the credentials.
 3. Ensure `bundle install` pulled in `omniauth`, `omniauth-google-oauth2`, and `omniauth-rails_csrf_protection`, then run `bin/rails db:migrate` so the `users` table has the new `provider`/`uid` columns.
 
 ### Default flows covered in Iteration 1
@@ -54,6 +68,8 @@
 - Reuse existing Devise accounts by linking them to Google on the first SSO attempt (using the new `provider`/`uid` columns) or auto-provision a campus user if no record exists.
 - Protect the feed by redirecting signed-out visitors to the redesigned login page via the global `authenticate_user!` hook and the authenticated/unauthenticated root split in `routes.rb`.
 - Experience the refreshed login page and global header powered by `application.css` / `login.css` plus the new asset packs, replacing `simple.css` and unifying the UI.
+- Generate thread-specific pseudonyms via the `ThreadIdentity` join table so every author gets a stable alias per conversation instead of a global handle.
+- Reveal identities on demand: posts and comments stay anonymous by default, but authors can opt-in to showing their real email with one click, and every reveal is captured in `AuditLog` for moderator traceability.
 
 ## Test Suites
 ```bash
@@ -65,22 +81,25 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- Examples cover models, requests, and helpers (all green).
-- `spec/models/post_spec.rb`: post validations and keyword search helper.
-- `spec/models/comment_spec.rb`: comment presence/association checks.
+- 62 examples / 0 failures (line coverage 82.32%, branch coverage 78.26%).
+- `spec/models/post_spec.rb`: validations, search helper, and thread-identity callback.
+- `spec/models/comment_spec.rb`: validations plus per-thread identity creation.
 - `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
 - `spec/models/user_spec.rb`: anonymous handle generation and associations.
-- `spec/requests/posts_spec.rb`: create and delete posts with proper authorization + flashes.
-- `spec/requests/comments_spec.rb`: delete comments with ownership checks and redirects.
+- `spec/models/thread_identity_spec.rb`, `spec/models/audit_log_spec.rb`: new anonymity infrastructure.
+- `spec/requests/posts_spec.rb`: create/delete flows, guest redirects, thread identities, reveal audits.
+- `spec/requests/comments_spec.rb`: comment CRUD, validation failures, thread identities, reveal audits.
 - `spec/requests/likes_spec.rb`: like/unlike actions with authentication checks.
 - `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
 
 **Cucumber scenarios**
-- 5 scenarios / 28 steps covering the primary user journeys.
-- `features/posts/browse_posts.feature`: anonymous feed browsing, search filtering, identity masking.
-- `features/posts/create_post.feature`: sign-up/login flow and successful post creation.
-- `features/comments/add_comment.feature`: authenticated commenting and flash message.
+- 14 scenarios / 85 steps (all passing) covering search edge cases, authentication gates, anonymity toggles, and the core CRUD flows.
+- `features/posts/browse_posts.feature`: authenticated browsing, empty-search alert, and guest redirect to the SSO screen.
+- `features/posts/create_post.feature`: signup + creation flow plus validation failures and guest access checks.
+- `features/comments/add_comment.feature`: commenting success + validation errors.
 - `features/posts/like_post.feature`: like/unlike toggle with count updates.
+- `features/posts/reveal_identity.feature`: verifies post/comment reveal buttons surface real identities and audit logs.
+- `features/posts/thread_pseudonym.feature`: proves each thread shows a unique pseudonym and never leaks the commenter’s email.
 
 ### Test Coverage
 
@@ -103,6 +122,11 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 
 ## Additional Materials
 - Iteration artifacts (such as proposal.txt) are stored in `/docs` as the project evolves.
+
+## Addressing Iteration 1 Feedback
+- Added Cucumber coverage for empty-search alerts, validation errors, and guest redirects so the user stories graders requested are now executable specs (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/comments/add_comment.feature`).
+- Locked down the post form behind authentication and documented the behavior so unauthenticated users see the SSO screen before posting (`config/routes.rb:22-33`, `features/posts/create_post.feature`).
+- Ensured post/comment deletion buttons continue to use confirmation prompts via Turbo `data-turbo_confirm`, matching the “confirmation guardrails” mentioned in the README (`app/views/posts/show.html.erb:61-70`).
 
 ## Repository Map (key folders)
 ```text

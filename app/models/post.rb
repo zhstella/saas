@@ -3,6 +3,10 @@ class Post < ApplicationRecord
   belongs_to :user
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
+  has_many :thread_identities, dependent: :destroy
+  has_many :audit_logs, as: :auditable, dependent: :destroy
+
+  after_create :ensure_thread_identity
 
   # 验证
   validates :title, presence: true
@@ -27,5 +31,11 @@ class Post < ApplicationRecord
     else
       all
     end
+  end
+
+  private
+
+  def ensure_thread_identity
+    ThreadIdentity.find_or_create_by!(user: user, post: self)
   end
 end

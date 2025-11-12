@@ -2,62 +2,52 @@ require 'rails_helper'
 
 RSpec.describe ApplicationHelper, type: :helper do
   describe '#display_author' do
-    context 'when user is nil' do
-      it 'returns "Anonymous Student"' do
-        expect(helper.display_author(nil)).to eq("Anonymous Student")
-      end
+    let(:post_record) { create(:post) }
+
+    before do
+      allow(helper).to receive(:current_user).and_return(current_user)
     end
 
-    context 'when user is the current_user' do
-      it 'returns "You"' do
-        user = create(:user)
-        allow(helper).to receive(:current_user).and_return(user)
+    let(:current_user) { nil }
 
-        expect(helper.display_author(user)).to eq("You")
-      end
+    it 'returns "Anonymous Student" when user is nil' do
+      expect(helper.display_author(nil)).to eq('Anonymous Student')
     end
 
-    context 'when user is a different user' do
-      it 'returns the anonymous handle' do
-        current = create(:user)
-        other = create(:user)
-        allow(helper).to receive(:current_user).and_return(current)
+    it 'returns "You" when the viewer owns the record' do
+      allow(helper).to receive(:current_user).and_return(post_record.user)
 
-        result = helper.display_author(other)
-
-        expect(result).to match(/^Lion #[A-Z0-9]{4}$/)
-        expect(result).to eq(other.anonymous_handle)
-      end
-
-      it 'does not return "You"' do
-        current = create(:user)
-        other = create(:user)
-        allow(helper).to receive(:current_user).and_return(current)
-
-        expect(helper.display_author(other)).not_to eq("You")
-      end
-
-      it 'does not reveal the email address' do
-        current = create(:user)
-        other = create(:user, email: "test@example.com")
-        allow(helper).to receive(:current_user).and_return(current)
-
-        result = helper.display_author(other)
-
-        expect(result).not_to include("test@example.com")
-        expect(result).not_to include("@")
-      end
+      expect(helper.display_author(post_record.user, context: post_record)).to eq('You')
     end
 
-    context 'edge cases' do
-      it 'handles when current_user is nil' do
-        user = create(:user)
-        allow(helper).to receive(:current_user).and_return(nil)
+    it 'falls back to global anonymous handle when no context is provided' do
+      user = create(:user)
 
-        result = helper.display_author(user)
+      expect(helper.display_author(user)).to eq(user.anonymous_handle)
+    end
 
-        expect(result).to eq(user.anonymous_handle)
-      end
+    it 'returns the thread-specific pseudonym for other participants' do
+      other_user = create(:user)
+      identity = ThreadIdentity.for(other_user, post_record)
+
+      result = helper.display_author(other_user, context: post_record)
+
+      expect(result).to eq(identity.pseudonym)
+    end
+
+    it 'reveals the email when the context flag is true' do
+      post_record.update!(show_real_identity: true)
+
+      result = helper.display_author(post_record.user, context: post_record)
+
+      expect(result).to eq(post_record.user.email)
+    end
+
+    it 'handles comment contexts via their post' do
+      comment = create(:comment, post: post_record)
+
+      identity = ThreadIdentity.for(comment.user, post_record)
+      expect(helper.display_author(comment.user, context: comment)).to eq(identity.pseudonym)
     end
   end
 end

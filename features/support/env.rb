@@ -9,6 +9,14 @@ require_relative '../../simplecov_setup'
 SimpleCov.command_name 'Cucumber'
 
 require 'cucumber/rails'
+require 'warden/test/helpers'
+
+Warden.test_mode!
+World(Warden::Test::Helpers)
+
+After do
+  Warden.test_reset!
+end
 
 # By default, any exception happening in your Rails application will bubble up
 # to Cucumber so that your scenario will fail. This is a different from how

@@ -18,6 +18,13 @@ RSpec.describe Post, type: :model do
     expect(post.errors[:body]).to include("can't be blank")
   end
 
+  it 'creates a thread identity after creation' do
+    post = create(:post)
+
+    identity = ThreadIdentity.find_by(user: post.user, post: post)
+    expect(identity).to be_present
+  end
+
   describe '.search' do
     let!(:matching_post) { create(:post, title: 'Housing tips', body: 'Advice on Columbia housing') }
     let!(:non_matching_post) { create(:post, title: 'Dining hall review', body: 'Food is great') }

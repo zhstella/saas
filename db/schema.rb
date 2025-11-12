@@ -10,11 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_211456) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.integer "auditable_id", null: false
+    t.string "auditable_type", null: false
+    t.datetime "created_at", null: false
+    t.json "metadata", default: {}, null: false
+    t.integer "performed_by_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable"
+    t.index ["performed_by_id"], name: "index_audit_logs_on_performed_by_id"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
   create_table "comments", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
+    t.boolean "show_real_identity", default: false, null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["post_id"], name: "index_comments_on_post_id"
@@ -33,6 +48,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_211456) do
   create_table "posts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
+    t.boolean "show_real_identity", default: false, null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
@@ -49,6 +65,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_211456) do
     t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
   end
 
+  create_table "thread_identities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.string "pseudonym", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["post_id"], name: "index_thread_identities_on_post_id"
+    t.index ["user_id", "post_id"], name: "index_thread_identities_on_user_id_and_post_id", unique: true
+    t.index ["user_id"], name: "index_thread_identities_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
@@ -63,9 +90,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_211456) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "audit_logs", "users"
+  add_foreign_key "audit_logs", "users", column: "performed_by_id"
   add_foreign_key "comments", "posts"
   add_foreign_key "comments", "users"
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
   add_foreign_key "posts", "users"
+  add_foreign_key "thread_identities", "posts"
+  add_foreign_key "thread_identities", "users"
 end

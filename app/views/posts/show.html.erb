@@ -15,15 +15,22 @@
   <h2 class="page-title"><%= @post.title %></h2>
   <div class="post-meta">
     <span class="post-author">
-      Posted by: 
-      <% if @post.user == current_user %>
-        <strong>You</strong>
-      <% else %>
-        <%= @post.user.email %>
-      <% end %>
+      Posted by: <strong><%= display_author(@post.user, context: @post) %></strong>
     </span>
     <span class="post-time"><%= time_ago_in_words(@post.created_at) %> ago</span>
   </div>
+
+  <% if current_user == @post.user && !@post.show_real_identity? %>
+    <div class="identity-controls">
+      <%= button_to "Reveal My Identity", 
+                    reveal_identity_post_path(@post), 
+                    method: :patch, 
+                    class: "form-submit-button identity-button", 
+                    data: { turbo_confirm: "Reveal your real identity on this thread?" } %>
+    </div>
+  <% elsif @post.show_real_identity? %>
+    <p class="identity-badge">Author chose to reveal their identity.</p>
+  <% end %>
   <div class="post-body">
     <%= @post.body %>
   </div>
@@ -32,16 +39,22 @@
   <div class="post-actions">
     
     <div class="post-actions-left">
-      <%= link_to "Like (👍 0)", "#", class: "form-cancel-button" %>
+      <% if user_signed_in? %>
+        <% if @post.liked_by?(current_user) %>
+          <%= button_to "Unlike (👍 #{@post.likes.count})", 
+                        post_like_path(@post, @post.find_like_by(current_user)), 
+                        method: :delete, 
+                        class: "form-cancel-button" %>
+        <% else %>
+          <%= button_to "Like (👍 #{@post.likes.count})", 
+                        post_likes_path(@post), 
+                        method: :post, 
+                        class: "form-cancel-button" %>
+        <% end %>
+      <% else %>
+        <span class="form-cancel-button disabled">👍 <%= @post.likes.count %></span>
+      <% end %>
 
-      <%# 
-        !! 更改 2: 
-           (a) 我们删除了旧的 'id'
-           (b) 我们添加了一个 'data-action'
-           这会告诉 Stimulus:
-           "当这个按钮被 'click' 时, 
-            调用 'post-show' controller 上的 'toggleCommentForm' 函数"
-      %>
       <%= link_to "Comments (#{ @post.comments.count })", "#", 
                   class: "form-cancel-button",
                   data: { action: "click->post-show#toggleCommentForm" } %>
@@ -70,6 +83,13 @@
     <h3 class="comments-title">Add Your Comment</h3>
     
     <%= form_with(model: [@post, @comment]) do |form| %>
+      <% if @comment.errors.any? %>
+        <div class="form-errors">
+          <% @comment.errors.full_messages.each do |message| %>
+            <p class="error-message"><%= message %></p>
+          <% end %>
+        </div>
+      <% end %>
       <div class="form-field">
         <%= form.label :body, "Comment Content", class: "form-label" %>
         <%= form.text_area :body, class: "form-textarea", rows: 4, placeholder: "Type your comment here..." %>
@@ -85,20 +105,23 @@
   <%# --- 4. 评论列表 --- %>
   <h3 class="comments-title">Comments (<%= @post.comments.count %>)</h3>
 
-  <div class="comments-list-container">
+  <div class="comments-list-container" id="comments">
     <% @post.comments.each do |comment| %>
+      <% next unless comment.persisted? %>
       <div class="comment-card">
 
         <%# 评论作者和时间 %>
         <div class="comment-meta">
           <span class="comment-author">
-            <% if comment.user == current_user %>
-              <strong>You</strong>
+            <strong><%= display_author(comment.user, context: comment) %></strong>
+          </span>
+          <span class="comment-time">
+            <% if comment.created_at.present? %>
+              <%= time_ago_in_words(comment.created_at) %> ago
             <% else %>
-              <%= comment.user.email %>
+              just now
             <% end %>
           </span>
-          <span class="comment-time"><%= time_ago_in_words(comment.created_at) %> ago</span>
         </div>
 
         <%# 评论正文 %>
@@ -113,7 +136,19 @@
                         method: :delete, 
                         class: "comment-delete-link",
                         data: { turbo_confirm: "Are you sure?" } %>
+            <% unless comment.show_real_identity? %>
+              <%= button_to "Reveal My Identity", 
+                            reveal_identity_post_comment_path(@post, comment), 
+                            method: :patch, 
+                            class: "comment-reveal-button", 
+                            data: { turbo_confirm: "Reveal your identity on this comment?" } %>
+            <% end %>
           </div>
+          <% if comment.show_real_identity? %>
+            <span class="identity-badge">Commenter revealed their identity.</span>
+          <% end %>
+        <% elsif comment.show_real_identity? %>
+          <span class="identity-badge">Commenter revealed their identity.</span>
         <% end %>
       </div>
     <% end %>

@@ -1,3 +1,5 @@
+require 'securerandom'
+
 class User < ApplicationRecord
   # 1. 你的 Devise 模块
   devise :database_authenticatable, :registerable,
@@ -8,6 +10,14 @@ class User < ApplicationRecord
   has_many :posts, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
+  has_many :thread_identities, dependent: :destroy
+  has_many :audit_logs, dependent: :destroy
+  has_many :performed_audit_logs, class_name: 'AuditLog', foreign_key: :performed_by_id, dependent: :destroy
+
+  def anonymous_handle
+    base = id ? id.to_s(36).upcase.rjust(4, '0') : SecureRandom.alphanumeric(4).upcase
+    "Lion ##{base[0, 4]}"
+  end
 
   # 3. 修复了“账户链接”逻辑的 OmniAuth 方法
   def self.from_omniauth(auth)
