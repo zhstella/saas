@@ -15,6 +15,7 @@
   - Recommended: install via `rbenv` → `brew install rbenv ruby-build`, `rbenv install 3.2.2`, `rbenv local 3.2.2`
 - Bundler (`gem install bundler`)
 - SQLite 3 (ships with macOS/Linux)
+- Google OAuth 2.0 client ID & secret configured for the CU/Barnard domains (see *Configure Google OAuth* below)
 
 ## Local Setup
 1. Ensure Bundler is available: `gem install bundler`
@@ -26,6 +27,19 @@
 1. Start the server: `rails server`
 2. Open the browser at http://localhost:3000
 
+### Configure Google OAuth (first-time setup)
+1. Create a Google Cloud OAuth client (Web application) and add `http://localhost:3000/users/auth/google_oauth2/callback` as an authorized redirect URI.
+2. Store the credentials via Rails encrypted credentials so Devise can read them:
+   ```bash
+   bin/rails credentials:edit
+   ```
+   ```yaml
+   google_oauth2:
+     client_id: YOUR_CLIENT_ID
+     client_secret: YOUR_CLIENT_SECRET
+   ```
+3. Ensure `bundle install` pulled in `omniauth`, `omniauth-google-oauth2`, and `omniauth-rails_csrf_protection`, then run `bin/rails db:migrate` so the `users` table has the new `provider`/`uid` columns.
+
 ### Default flows covered in Iteration 1
 - Browse a feed of posts anonymously, including keyword search without revealing identities
 - Register/log in via Devise to get a pseudonymous identity
@@ -36,8 +50,10 @@
 - Display pseudonymous handles instead of email addresses on posts and comments
 
 ### Default flows covered in Iteration 2
-- Sign in with Columbia/Barnard Google accounts via OmniAuth, automatically rejecting emails outside the approved domains to simulate campus SSO.
-- Experience a refreshed login page and global header that rely on the new `application.css` / `login.css` styles instead of `simple.css`, allowing us to keep iterating on the UI without conflicting defaults.
+- Sign in with Columbia/Barnard Google accounts via OmniAuth; the callback controller enforces the domain whitelist and surfaces an “Access Denied” flash for non-campus addresses.
+- Reuse existing Devise accounts by linking them to Google on the first SSO attempt (using the new `provider`/`uid` columns) or auto-provision a campus user if no record exists.
+- Protect the feed by redirecting signed-out visitors to the redesigned login page via the global `authenticate_user!` hook and the authenticated/unauthenticated root split in `routes.rb`.
+- Experience the refreshed login page and global header powered by `application.css` / `login.css` plus the new asset packs, replacing `simple.css` and unifying the UI.
 
 ## Test Suites
 ```bash
