@@ -8,6 +8,19 @@
     </div>
   <% end %>
 
+  <% expiry_options = [
+    ['No expiry (default)', ''],
+    ['7 days', '7'],
+    ['14 days', '14'],
+    ['30 days', '30']
+  ] %>
+  <% preselected_expiry = if post.expires_at.present?
+      remaining_days = ((post.expires_at.to_date - Date.current)).to_i
+      %w[7 14 30].include?(remaining_days.to_s) ? remaining_days.to_s : ''
+    else
+      ''
+    end %>
+
   <div class="form-field">
     <%= form.label :title, class: "form-label" %>
     <%= form.text_field :title, class: "form-input", placeholder: "Enter your question title..." %>
@@ -16,6 +29,15 @@
   <div class="form-field">
     <%= form.label :body, "Content", class: "form-label" %>
     <%= form.text_area :body, class: "form-textarea", placeholder: "Add your details here..." %>
+  </div>
+
+  <div class="form-field">
+    <%= form.label :expires_at, "Make this post disappear after:", class: "form-label" %>
+    <%= form.select :expires_at,
+          options_for_select(expiry_options, selected: preselected_expiry),
+          {},
+          class: 'form-input' %>
+    <small class="form-hint">Optional: choose an expiration window between 7 and 30 days.</small>
   </div>
 
   <div class="form-actions">

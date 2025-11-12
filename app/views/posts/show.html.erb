@@ -20,6 +20,10 @@
     <span class="post-time"><%= time_ago_in_words(@post.created_at) %> ago</span>
   </div>
 
+  <% if @post.expires_at.present? %>
+    <p class="identity-badge">Expires <%= time_ago_in_words(@post.expires_at) %> from now</p>
+  <% end %>
+
   <% if current_user == @post.user && !@post.show_real_identity? %>
     <div class="identity-controls">
       <%= button_to "Reveal My Identity", 

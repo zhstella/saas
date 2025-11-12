@@ -7,6 +7,9 @@ class Post < ApplicationRecord
   has_many :audit_logs, as: :auditable, dependent: :destroy
 
   after_create :ensure_thread_identity
+  scope :active, -> { where('expires_at IS NULL OR expires_at > ?', Time.current) }
+
+  validate :expires_at_within_window
 
   # 验证
   validates :title, presence: true
@@ -24,12 +27,11 @@ class Post < ApplicationRecord
 
   # --- 这是 SQLite 的搜索方法 (替代 pg_search) ---
   def self.search(query)
+    scope = active
     if query.present?
-      # 一个基础的 WHERE ... LIKE ... 查询，不区分大小写 (iLIKE 适用于 Postgres, LIKE 适用于 SQLite)
-      # 为了同时兼容，我们统一转为小写
-      where("LOWER(title) LIKE :query OR LOWER(body) LIKE :query", query: "%#{query.downcase}%")
+      scope.where("LOWER(title) LIKE :query OR LOWER(body) LIKE :query", query: "%#{query.downcase}%")
     else
-      all
+      scope
     end
   end
 
@@ -37,5 +39,14 @@ class Post < ApplicationRecord
 
   def ensure_thread_identity
     ThreadIdentity.find_or_create_by!(user: user, post: self)
+  end
+
+  def expires_at_within_window
+    return if expires_at.blank?
+
+    remaining_days = (expires_at.to_date - Date.current).to_i
+    unless remaining_days.between?(7, 30)
+      errors.add(:expires_at, 'must be between 7 and 30 days from now')
+    end
   end
 end

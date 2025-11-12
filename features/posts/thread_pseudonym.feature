@@ -3,7 +3,7 @@ Feature: Thread-specific pseudonyms
   I want each thread to display a unique pseudonym for my account
   So that my identity stays hidden while conversations remain consistent
 
-  Scenario: Comment pseudonym matches the thread-specific handle
+  Scenario: Observers only see pseudonyms for commenters on a thread
     Given a user exists with email "thread_owner@example.com" and password "Password123!"
     And I sign in with email "thread_owner@example.com" and password "Password123!"
     When I create a post titled "Need CPT forms" with body "Looking for advice on CPT paperwork."

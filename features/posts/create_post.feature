@@ -20,3 +20,9 @@ Feature: Ask a new question
   Scenario: Guest must log in before accessing the post form
     When I visit the new post page without logging in
     Then I should see "LOG IN WITH UNIVERSITY SSO"
+
+  Scenario: Author marks a post to expire in 7 days
+    Given I register with email "temp@example.com" and password "Password123!"
+    When I create an expiring post titled "Temporary tips" with body "This should disappear soon." that expires in 7 days
+    And I open the post titled "Temporary tips"
+    Then I should see "Expires" on the page

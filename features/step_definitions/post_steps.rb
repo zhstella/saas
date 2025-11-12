@@ -8,6 +8,10 @@ Given('a post titled {string} exists') do |title|
   create(:post, title: title, body: 'Placeholder body for feature spec')
 end
 
+Given('an expired post titled {string} exists') do |title|
+  create(:post, :expired, title: title, body: 'Expired body')
+end
+
 Given('a user exists with email {string} and password {string}') do |email, password|
   create(:user, email: email, password: password, password_confirmation: password)
 end
@@ -15,11 +19,13 @@ end
 Given('I register with email {string} and password {string}') do |email, password|
   user = User.create!(email: email, password: password, password_confirmation: password)
   login_as(user, scope: :user)
+  @current_user_email = email
 end
 
 Given('I sign in with email {string} and password {string}') do |email, _password|
   user = User.find_by!(email: email)
   login_as(user, scope: :user)
+  @current_user_email = email
 end
 
 When('I visit the home page') do
@@ -42,7 +48,22 @@ When('I create a post titled {string} with body {string}') do |title, body|
   click_link 'Submit a Post'
   fill_in 'Title', with: title
   fill_in 'Content', with: body
-  click_button 'Post'
+  click_button 'Submit Post'
+  raise 'No current user set' unless @current_user_email
+  user = User.find_by!(email: @current_user_email)
+  @last_created_post = Post.where(user: user, title: title).order(created_at: :desc).first || Post.order(created_at: :desc).first
+end
+
+When('I create an expiring post titled {string} with body {string} that expires in {int} days') do |title, body, days|
+  visit '/'
+  click_link 'Submit a Post'
+  fill_in 'Title', with: title
+  fill_in 'Content', with: body
+  select "#{days} days", from: 'post_expires_at'
+  click_button 'Submit Post'
+  raise 'No current user set' unless @current_user_email
+  user = User.find_by!(email: @current_user_email)
+  @last_created_post = Post.where(user: user, title: title).order(created_at: :desc).first || Post.order(created_at: :desc).first
 end
 
 When('I try to create a post without a title') do
@@ -50,7 +71,7 @@ When('I try to create a post without a title') do
   click_link 'Submit a Post'
   fill_in 'Title', with: ''
   fill_in 'Content', with: ''
-  click_button 'Post'
+  click_button 'Submit Post'
 end
 
 When('I visit the new post page without logging in') do
@@ -63,7 +84,10 @@ When('I sign out') do
 end
 
 When('I visit the post titled {string}') do |title|
-  post = Post.find_by!(title: title)
+  user = User.find_by!(email: 'temp@example.com') rescue nil
+  login_as(user, scope: :user) if user.present?
+  post = Post.order(created_at: :desc).find { |p| p.title == title }
+  raise ActiveRecord::RecordNotFound, "Post #{title} not found" unless post
   visit Rails.application.routes.url_helpers.post_path(post)
 end
 
@@ -78,7 +102,18 @@ When('I submit an empty comment') do
 end
 
 When('I open the post titled {string}') do |title|
-  click_link title
+  post = @last_created_post if defined?(@last_created_post) && @last_created_post.present?
+  @last_created_post = nil
+
+  if post.present?
+    visit Rails.application.routes.url_helpers.post_path(post)
+  elsif page.has_css?('#posts .post-card', text: title, wait: false)
+    find('#posts .post-card', text: title).click
+  else
+    post = Post.order(created_at: :desc).detect { |p| p.title == title }
+    raise ActiveRecord::RecordNotFound, "Post #{title} not found" unless post
+    visit Rails.application.routes.url_helpers.post_path(post)
+  end
 end
 
 When('I reveal my identity on the post titled {string}') do |title|

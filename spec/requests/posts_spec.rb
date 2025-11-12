@@ -85,6 +85,30 @@ RSpec.describe "Posts", type: :request do
     end
   end
 
+  describe "GET /posts/:id" do
+    let!(:post_record) { create(:post, :expiring_soon) }
+
+    it "shows active posts" do
+      sign_in post_record.user
+
+      get post_path(post_record)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(post_record.title)
+    end
+
+    it "redirects expired posts back to the feed" do
+      post_record.update_column(:expires_at, 1.day.ago)
+      sign_in post_record.user
+
+      get post_path(post_record)
+
+      expect(response).to redirect_to(posts_path)
+      follow_redirect!
+      expect(response.body).to include('This post has expired.')
+    end
+  end
+
   describe "DELETE /posts/:id" do
     let!(:post_record) { create(:post) }
 

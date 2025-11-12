@@ -33,3 +33,10 @@ Feature: Browse campus conversations
   Scenario: Guest visitors are asked to log in first
     When I visit the home page
     Then I should see "LOG IN WITH UNIVERSITY SSO"
+
+  Scenario: Expired posts are hidden from the feed
+    Given a user exists with email "active@example.com" and password "Password123!"
+    And an expired post titled "Old roommates" exists
+    And I sign in with email "active@example.com" and password "Password123!"
+    When I visit the home page
+    Then I should not see "Old roommates" in the posts list

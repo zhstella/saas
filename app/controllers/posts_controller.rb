@@ -1,26 +1,19 @@
 class PostsController < ApplicationController
   before_action :set_post, only: [ :show, :destroy, :reveal_identity ]
+  before_action :ensure_active_post, only: [ :show, :reveal_identity ]
 
   # GET /posts
   def index
+    base_scope = Post.active.order(created_at: :desc)
     if params.key?(:search)
-      
       if params[:search].present?
-        
-        # --- 情况 1: 成功搜索 ---
         @posts = Post.search(params[:search]).order(created_at: :desc)
-        
       else
-        
-        # --- 情况 2: 用户提交了空搜索 ---
         flash.now[:alert] = "Please enter text to search."
-        @posts = Post.all.order(created_at: :desc)
-        
+        @posts = base_scope
       end
-      
     else
-      # --- 情况 3: 用户只是刚加载页面 (没有搜索) ---
-      @posts = Post.all.order(created_at: :desc)
+      @posts = base_scope
     end
   end
 
@@ -75,6 +68,19 @@ class PostsController < ApplicationController
   end
 
   def post_params
-    params.require(:post).permit(:title, :body)
+    permitted = params.require(:post).permit(:title, :body, :expires_at)
+    if permitted[:expires_at].blank?
+      permitted[:expires_at] = nil
+    else
+      days = permitted[:expires_at].to_i
+      permitted[:expires_at] = days.positive? ? Time.zone.now + days.days : nil
+    end
+    permitted
+  end
+
+  def ensure_active_post
+    return if @post.expires_at.blank? || @post.expires_at.future?
+
+    redirect_to posts_path, alert: 'This post has expired.'
   end
 end

@@ -28,6 +28,9 @@
           <div class="post-card-meta">
             <span class="meta-author">By: <%= display_author(post.user, context: post) %></span>
             <span class="meta-time"><%= time_ago_in_words(post.created_at) %> ago</span>
+            <% if post.expires_at.present? %>
+              <span class="meta-expiry">Expires <%= time_ago_in_words(post.expires_at) %> from now</span>
+            <% end %>
           </div>
         </div>
       <% end %>

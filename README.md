@@ -70,6 +70,8 @@
 - Experience the refreshed login page and global header powered by `application.css` / `login.css` plus the new asset packs, replacing `simple.css` and unifying the UI.
 - Generate thread-specific pseudonyms via the `ThreadIdentity` join table so every author gets a stable alias per conversation instead of a global handle.
 - Reveal identities on demand: posts and comments stay anonymous by default, but authors can opt-in to showing their real email with one click, and every reveal is captured in `AuditLog` for moderator traceability.
+- Mark posts as ephemeral by selecting a 7/14/30-day expiry window. Expired threads drop off the feed automatically and cannot be opened once the timer elapses.
+- Schedule the daily `ExpirePostsJob` (Heroku Scheduler, cron, etc.) to purge threads whose `expires_at` timestamps have passed so the feed stays fresh. Manually trigger it anytime with `rails runner 'ExpirePostsJob.perform_later'`.
 
 ## Test Suites
 ```bash
@@ -81,7 +83,7 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 62 examples / 0 failures (line coverage 82.32%, branch coverage 78.26%).
+- 69 examples / 0 failures (line coverage 85.00%, branch coverage 80.36%).
 - `spec/models/post_spec.rb`: validations, search helper, and thread-identity callback.
 - `spec/models/comment_spec.rb`: validations plus per-thread identity creation.
 - `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
@@ -93,7 +95,10 @@ bundle exec cucumber
 - `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
 
 **Cucumber scenarios**
-- 14 scenarios / 85 steps (all passing) covering search edge cases, authentication gates, anonymity toggles, and the core CRUD flows.
+- Latest run: 16 scenarios / 95 steps passing in ~0.4s via `bundle exec cucumber`.
+- Features exercised: commenting, browsing/searching, creating posts (including expiring threads), liking/unliking, identity reveals, and thread-specific pseudonyms to ensure observers only see alias handles.
+- Coverage snapshot: line 73.66% (165/224), branch 55.36% (31/56). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
+- Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true` in `cucumber.yml`). Set `CUCUMBER_PUBLISH_QUIET=true` locally to silence the banner.
 - `features/posts/browse_posts.feature`: authenticated browsing, empty-search alert, and guest redirect to the SSO screen.
 - `features/posts/create_post.feature`: signup + creation flow plus validation failures and guest access checks.
 - `features/comments/add_comment.feature`: commenting success + validation errors.
@@ -122,6 +127,7 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 
 ## Additional Materials
 - Iteration artifacts (such as proposal.txt) are stored in `/docs` as the project evolves.
+- A daily `ExpirePostsJob` can be scheduled (e.g., via Heroku Scheduler or cron) to purge posts whose `expires_at` timestamp has passed.
 
 ## Addressing Iteration 1 Feedback
 - Added Cucumber coverage for empty-search alerts, validation errors, and guest redirects so the user stories graders requested are now executable specs (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/comments/add_comment.feature`).

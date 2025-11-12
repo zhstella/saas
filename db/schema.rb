@@ -48,10 +48,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
   create_table "posts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
+    t.datetime "expires_at"
     t.boolean "show_real_identity", default: false, null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.index ["expires_at"], name: "index_posts_on_expires_at"
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
