@@ -84,7 +84,7 @@ bundle exec rspec
 bundle exec cucumber
 ```
 
-- **RSpec coverage**
+**RSpec coverage**
 - 89 examples / 0 failures (line coverage 93.97%, branch coverage 81.63%).
 - `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, and thread-identity callback.
 - `spec/models/answer_spec.rb`: validations, per-thread identity creation, and acceptance cleanup.
@@ -98,7 +98,7 @@ bundle exec cucumber
 - `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
 - `spec/queries/post_search_query_spec.rb`: filter coverage for the topic/tag/timeframe search service.
 
-- **Cucumber scenarios**
+**Cucumber scenarios**
 - Latest run: 19 scenarios / 129 steps passing in ~0.7s via `bundle exec cucumber`.
 - Features exercised: answering, browsing/searching, creating posts (including expiring threads and previewing drafts), liking/unliking, identity reveals, thread-specific pseudonyms, and locking/unlocking accepted answers to keep threads tidy.
 - Coverage snapshot: line 95.62% (349/365), branch 83.67% (82/98). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
