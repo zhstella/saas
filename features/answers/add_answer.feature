@@ -47,3 +47,15 @@ Feature: Respond to a question
     When I attempt to delete the most recent answer without permission
     Then I should see the alert "You do not have permission to perform this action."
     And I should see "I'll share my advisor's notes." in the answers list
+
+  Scenario: Students comment on answers
+    Given a user exists with email "answerer@example.com" and password "Password123!"
+    And I sign in with email "answerer@example.com" and password "Password123!"
+    When I visit the post titled "Applying for CPT"
+    And I leave an answer "Bring your updated I-20."
+    And I sign out
+    Given a user exists with email "commenter@example.com" and password "Password123!"
+    And I sign in with email "commenter@example.com" and password "Password123!"
+    And I visit the post titled "Applying for CPT"
+    And I comment "Thanks for clarifying!" on the most recent answer
+    Then I should see "Thanks for clarifying!" in the answers list

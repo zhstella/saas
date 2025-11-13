@@ -1,0 +1,8 @@
+<div class="main-content-container">
+  <h2 class="page-title">Edit Post</h2>
+  <%= render 'form', post: @post %>
+
+  <% if @post.post_revisions.any? %>
+    <%= render 'revision_history', post: @post %>
+  <% end %>
+</div>

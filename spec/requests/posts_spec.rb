@@ -137,6 +137,40 @@ RSpec.describe "Posts", type: :request do
     end
   end
 
+  describe "PATCH /posts/:id" do
+    let(:user) { create(:user) }
+    let!(:post_record) { create(:post, user: user, title: 'Original Title', body: 'Original body text') }
+
+    it "updates the post and records a revision" do
+      sign_in user
+
+      patch post_path(post_record), params: {
+        post: {
+          title: post_record.title,
+          body: 'Updated body text',
+          topic_id: post_record.topic_id,
+          tag_ids: post_record.tag_ids,
+          school: post_record.school,
+          course_code: post_record.course_code
+        }
+      }
+
+      expect(response).to redirect_to(post_path(post_record))
+      expect(post_record.reload.body).to eq('Updated body text')
+      expect(post_record.post_revisions.count).to eq(1)
+      expect(post_record.post_revisions.first.title).to eq('Original Title')
+    end
+
+    it "prevents non-owners from editing" do
+      sign_in create(:user)
+
+      patch post_path(post_record), params: { post: { title: 'Nope', body: 'Body', topic_id: post_record.topic_id, tag_ids: post_record.tag_ids } }
+
+      expect(response).to redirect_to(post_path(post_record))
+      expect(post_record.reload.title).to eq('Original Title')
+    end
+  end
+
   describe "GET /posts/:id" do
     let!(:post_record) { create(:post, :expiring_soon) }
 

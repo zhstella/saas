@@ -90,6 +90,31 @@ RSpec.describe "Answers", type: :request do
     end
   end
 
+  describe "PATCH /posts/:post_id/answers/:id" do
+    let!(:answer) { create(:answer, body: 'Original answer') }
+    let(:post_record) { answer.post }
+
+    it "updates the answer and stores a revision" do
+      sign_in answer.user
+
+      patch post_answer_path(post_record, answer), params: { answer: { body: 'Updated answer body' } }
+
+      expect(response).to redirect_to(post_path(post_record))
+      expect(answer.reload.body).to eq('Updated answer body')
+      expect(answer.answer_revisions.count).to eq(1)
+      expect(answer.answer_revisions.first.body).to eq('Original answer')
+    end
+
+    it "prevents non-owners from editing" do
+      sign_in create(:user)
+
+      patch post_answer_path(post_record, answer), params: { answer: { body: 'Hacked' } }
+
+      expect(response).to redirect_to(post_path(post_record))
+      expect(answer.reload.body).to eq('Original answer')
+    end
+  end
+
   describe "PATCH /posts/:post_id/answers/:id/reveal_identity" do
     let!(:answer) { create(:answer) }
     let(:post_record) { answer.post }

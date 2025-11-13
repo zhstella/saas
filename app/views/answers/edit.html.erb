@@ -1,0 +1,23 @@
+<div class="main-content-container">
+  <h2 class="page-title">Edit Answer</h2>
+
+  <%= form_with(model: [@post, @answer]) do |form| %>
+    <% if @answer.errors.any? %>
+      <div class="form-errors">
+        <% @answer.errors.full_messages.each do |message| %>
+          <p class="error-message"><%= message %></p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="form-field">
+      <%= form.label :body, 'Updated Answer', class: 'form-label' %>
+      <%= form.text_area :body, class: 'form-textarea' %>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit 'Save Changes', class: 'form-submit-button' %>
+      <%= link_to 'Cancel', post_path(@post), class: 'form-cancel-button' %>
+    </div>
+  <% end %>
+</div>

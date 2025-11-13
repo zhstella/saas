@@ -1,0 +1,19 @@
+<div class="revision-history">
+  <h3>Revision history</h3>
+  <ul>
+    <% post.post_revisions.order(created_at: :desc).each do |revision| %>
+      <li>
+        <div class="revision-meta">
+          <span class="revision-author"><%= display_author(revision.user, context: post) %></span>
+          <span class="revision-time"><%= time_ago_in_words(revision.created_at) %> ago</span>
+        </div>
+        <div class="revision-body">
+          <% if revision.title.present? %>
+            <strong><%= revision.title %></strong>
+          <% end %>
+          <p><%= simple_format(revision.body) %></p>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+</div>

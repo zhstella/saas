@@ -11,6 +11,26 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
+  create_table "answer_comments", force: :cascade do |t|
+    t.integer "answer_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["answer_id"], name: "index_answer_comments_on_answer_id"
+    t.index ["user_id"], name: "index_answer_comments_on_user_id"
+  end
+
+  create_table "answer_revisions", force: :cascade do |t|
+    t.integer "answer_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["answer_id"], name: "index_answer_revisions_on_answer_id"
+    t.index ["user_id"], name: "index_answer_revisions_on_user_id"
+  end
+
   create_table "answers", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -43,6 +63,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.integer "user_id", null: false
     t.index ["post_id"], name: "index_likes_on_post_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "post_revisions", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["post_id"], name: "index_post_revisions_on_post_id"
+    t.index ["user_id"], name: "index_post_revisions_on_user_id"
   end
 
   create_table "post_tags", force: :cascade do |t|
@@ -129,12 +160,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "answer_comments", "answers"
+  add_foreign_key "answer_comments", "users"
+  add_foreign_key "answer_revisions", "answers"
+  add_foreign_key "answer_revisions", "users"
   add_foreign_key "answers", "posts"
   add_foreign_key "answers", "users"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "audit_logs", "users", column: "performed_by_id"
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
+  add_foreign_key "post_revisions", "posts"
+  add_foreign_key "post_revisions", "users"
   add_foreign_key "post_tags", "posts"
   add_foreign_key "post_tags", "tags"
   add_foreign_key "posts", "answers", column: "accepted_answer_id"
