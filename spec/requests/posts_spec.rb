@@ -30,6 +30,39 @@ RSpec.describe "Posts", type: :request do
     end
   end
 
+  describe "GET /posts/my_threads" do
+    let(:user) { create(:user) }
+    let!(:owned_post) { create(:post, user: user, title: 'My housing post') }
+    let!(:other_user_post) { create(:post, title: 'Someone else post') }
+
+    it "redirects guests to the login page" do
+      get my_threads_posts_path
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "shows only posts authored by the signed-in user" do
+      sign_in user
+
+      get my_threads_posts_path
+
+      expect(response.body).to include('My Threads')
+      expect(response.body).to include(owned_post.title)
+      expect(response.body).not_to include(other_user_post.title)
+    end
+
+    it "applies search filters within the user's own threads" do
+      additional_post = create(:post, user: user, title: 'Visa renewal checklist')
+      sign_in user
+
+      get my_threads_posts_path, params: { filters: { q: 'visa' } }
+
+      expect(response.body).to include('Visa renewal checklist')
+      expect(response.body).not_to include(owned_post.title)
+      expect(response.body).not_to include(other_user_post.title)
+    end
+  end
+
   describe "POST /posts" do
     let(:user) { create(:user) }
     let(:topic) { create(:topic) }

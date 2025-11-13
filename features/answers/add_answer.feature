@@ -25,3 +25,25 @@ Feature: Respond to a question
     When I sign out
     And I visit the post titled "Applying for CPT"
     Then I should see "LOG IN WITH UNIVERSITY SSO"
+
+  Scenario: Answer author deletes their response
+    Given a user exists with email "deleter@example.com" and password "Password123!"
+    And I sign in with email "deleter@example.com" and password "Password123!"
+    When I visit the post titled "Applying for CPT"
+    And I leave an answer "Here is the paperwork checklist."
+    And I delete the most recent answer
+    Then I should see "Answer deleted."
+    And I should not see "Here is the paperwork checklist." in the answers list
+
+  Scenario: Only the author can delete their answer
+    Given a user exists with email "answer_owner@example.com" and password "Password123!"
+    And I sign in with email "answer_owner@example.com" and password "Password123!"
+    When I visit the post titled "Applying for CPT"
+    And I leave an answer "I'll share my advisor's notes."
+    And I sign out
+    Given a user exists with email "bystander@example.com" and password "Password123!"
+    And I sign in with email "bystander@example.com" and password "Password123!"
+    And I visit the post titled "Applying for CPT"
+    When I attempt to delete the most recent answer without permission
+    Then I should see the alert "You do not have permission to perform this action."
+    And I should see "I'll share my advisor's notes." in the answers list

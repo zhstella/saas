@@ -56,43 +56,56 @@
     <%= link_to "Submit a Post", new_post_path, class: "btn-submit-question" %>
   </div>
 
-  <h2 class="post-list-title">Post List</h2>
+  <h2 class="post-list-title"><%= @viewing_my_threads ? 'My Threads' : 'Post List' %></h2>
+  <% if @viewing_my_threads %>
+    <p class="post-list-subtitle">Only threads you created are shown here.</p>
+  <% end %>
 
   <div id="posts">
-    <% @posts.each do |post| %>
-      <%= link_to post_path(post), class: "post-card" do %>
-        <div class="post-card-content">
-          <div class="post-card-header">
-            <h3 class="post-card-title"><%= post.title %></h3>
-            <span class="status-pill"><%= post.status.humanize %></span>
-          </div>
-          <div class="post-card-meta">
-            <span class="meta-topic"><%= post.topic&.name %></span>
-            <span class="meta-author">By: <%= display_author(post.user, context: post) %></span>
-            <span class="meta-time"><%= time_ago_in_words(post.created_at) %> ago</span>
-            <% if post.expires_at.present? %>
-              <span class="meta-expiry">Expires <%= time_ago_in_words(post.expires_at) %> from now</span>
+    <% if @posts.any? %>
+      <% @posts.each do |post| %>
+        <%= link_to post_path(post), class: "post-card" do %>
+          <div class="post-card-content">
+            <div class="post-card-header">
+              <h3 class="post-card-title"><%= post.title %></h3>
+              <span class="status-pill"><%= post.status.humanize %></span>
+            </div>
+            <div class="post-card-meta">
+              <span class="meta-topic"><%= post.topic&.name %></span>
+              <span class="meta-author">By: <%= display_author(post.user, context: post) %></span>
+              <span class="meta-time"><%= time_ago_in_words(post.created_at) %> ago</span>
+              <% if post.expires_at.present? %>
+                <span class="meta-expiry">Expires <%= time_ago_in_words(post.expires_at) %> from now</span>
+              <% end %>
+            </div>
+            <% if post.school.present? || post.course_code.present? %>
+              <div class="post-card-meta">
+                <% if post.school.present? %>
+                  <span class="meta-chip">School: <%= post.school %></span>
+                <% end %>
+                <% if post.course_code.present? %>
+                  <span class="meta-chip">Course: <%= post.course_code %></span>
+                <% end %>
+              </div>
+            <% end %>
+            <% if post.tags.any? %>
+              <div class="post-card-tags">
+                <% post.tags.each do |tag| %>
+                  <span class="tag-chip readonly"><%= tag.name %></span>
+                <% end %>
+              </div>
             <% end %>
           </div>
-          <% if post.school.present? || post.course_code.present? %>
-            <div class="post-card-meta">
-              <% if post.school.present? %>
-                <span class="meta-chip">School: <%= post.school %></span>
-              <% end %>
-              <% if post.course_code.present? %>
-                <span class="meta-chip">Course: <%= post.course_code %></span>
-              <% end %>
-            </div>
-          <% end %>
-          <% if post.tags.any? %>
-            <div class="post-card-tags">
-              <% post.tags.each do |tag| %>
-                <span class="tag-chip readonly"><%= tag.name %></span>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
+        <% end %>
       <% end %>
+    <% elsif @viewing_my_threads %>
+      <div class="empty-state">
+        <p>You have not created any threads yet. Submit a post to get started!</p>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <p>No posts match your filters. Try adjusting your search.</p>
+      </div>
     <% end %>
   </div>
 </div>

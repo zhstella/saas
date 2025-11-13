@@ -75,6 +75,8 @@
 - Structure Q&A so every reply is an answer, question authors can accept the best response, and the thread locks (with a reopen button) once solved.
 - Author posts with the taxonomy-driven composer: pick an official topic, add 1-5 curated tags, capture school/course context, and open an inline draft preview before publishing.
 - Filter the feed with full-text search plus topic, tag, school, course, timeframe, and status facets powered by the new `PostSearchQuery` service.
+- Pivot to the “My Threads” feed from the header to see only the posts you authored, complete with empty-state messaging and support for the full filter toolbox.
+
 
 ## Test Suites
 ```bash
@@ -86,31 +88,31 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 89 examples / 0 failures (line coverage 93.97%, branch coverage 81.63%).
-- `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, and thread-identity callback.
-- `spec/models/answer_spec.rb`: validations, per-thread identity creation, and acceptance cleanup.
-- `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
-- `spec/models/user_spec.rb`: anonymous handle generation, OmniAuth linkage, and associations.
-- `spec/models/thread_identity_spec.rb`, `spec/models/audit_log_spec.rb`: new anonymity infrastructure.
-- `spec/requests/posts_spec.rb`: create/delete flows, guest redirects, thread identities, reveal audits, and taxonomy validations.
-- `spec/requests/answers_spec.rb`: answer CRUD, validation failures, thread identities, acceptance, and reveal audits.
-- `spec/requests/likes_spec.rb`: like/unlike actions with authentication checks.
+- 92 examples / 0 failures (line coverage 95.76%, branch coverage 84.0%).
+- `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, expiration logic, and thread-identity callback.
+- `spec/models/answer_spec.rb`: body validations, per-thread identities, reveal logging, and acceptance cleanup.
+- `spec/models/like_spec.rb`: uniqueness constraint plus helper methods for liked?/find_like_by.
+- `spec/models/user_spec.rb`: anonymous handle helper and OmniAuth linkage for happy/duplicate/new flows.
+- `spec/requests/posts_spec.rb`: global feed filters, create/destroy, reveal identity, expiring threads, and the `my_threads` route.
+- `spec/requests/answers_spec.rb`: CRUD, validation, authorization, identity reveals, and accept/reopen flows.
+- `spec/requests/likes_spec.rb`: like/unlike endpoints with authentication guards.
 - `spec/requests/omniauth_callbacks_spec.rb`: Google SSO domain enforcement and account linking.
-- `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
-- `spec/queries/post_search_query_spec.rb`: filter coverage for the topic/tag/timeframe search service.
+- `spec/helpers/application_helper_spec.rb`: `display_author` pseudonym helper.
+- `spec/queries/post_search_query_spec.rb`: text/topic/status/tag/school/course/timeframe/author filters.
 
 **Cucumber scenarios**
-- Latest run: 19 scenarios / 129 steps passing in ~0.7s via `bundle exec cucumber`.
-- Features exercised: answering, browsing/searching, creating posts (including expiring threads and previewing drafts), liking/unliking, identity reveals, thread-specific pseudonyms, and locking/unlocking accepted answers to keep threads tidy.
-- Coverage snapshot: line 95.62% (349/365), branch 83.67% (82/98). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
-- Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true` in `cucumber.yml`). Set `CUCUMBER_PUBLISH_QUIET=true` locally to silence the banner.
-- `features/posts/browse_posts.feature`: authenticated browsing, the advanced filter bar (search + facets), empty-search alerts, and guest redirect to the SSO screen.
+- Latest run: 26 scenarios / 182 steps passing in ~0.9s via `bundle exec cucumber`.
+- Coverage snapshot: line 95.76% (361/377), branch 84.0% (84/100) once merged with the RSpec suite. Run `bundle exec cucumber` followed by `open coverage/index.html` to inspect details.
+- Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true`). Set `CUCUMBER_PUBLISH_QUIET=true` or pass `--publish-quiet` locally to silence the banner.
+- `features/posts/browse_posts.feature`: authenticated browsing, advanced filters, My Threads navigation, blank-search alerts, and guest redirect to the SSO screen.
 - `features/posts/create_post.feature`: signup + creation flow, validation failures, expiring threads, and draft preview UX.
-- `features/answers/add_answer.feature`: answering success + validation errors.
+- `features/answers/add_answer.feature`: answering success + validation errors plus delete permissions for owners vs. non-owners.
 - `features/posts/like_post.feature`: like/unlike toggle with count updates.
 - `features/posts/reveal_identity.feature`: verifies post/answer reveal buttons surface real identities and audit logs.
 - `features/posts/thread_pseudonym.feature`: proves each thread shows a unique pseudonym and never leaks the answerer’s email.
 - `features/posts/accept_answer.feature`: author accepts an answer, thread locks, and reopening restores the composer.
+- `features/auth/google_sign_in.feature`: OmniAuth success path for campus emails and rejection for non-campus addresses.
+- `features/posts/expire_posts_job.feature`: executes `ExpirePostsJob` to remove threads once their expiry window elapses.
 
 ### Test Coverage
 
@@ -123,7 +125,7 @@ open coverage/index.html
 ```
 
 **Target:** 90%+ statement coverage
-**Local test results:** 95.62% line coverage, 83.67% branch coverage
+**Local test results:** 95.76% line coverage, 84.0% branch coverage (after running both suites)
 
 Running the test suites will generate a detailed coverage report in `coverage/index.html`.
 
@@ -147,23 +149,28 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 CU_Blueboard/
 ├── app/
 │   ├── controllers/
-│   │   ├── application_controller.rb   # Global Devise auth hook
-│   │   ├── posts_controller.rb         # Post CRUD + search
-│   │   ├── answers_controller.rb       # Answer create/destroy/accept
-│   │   └── likes_controller.rb         # Like toggle endpoints
+│   │   ├── application_controller.rb        # Global Devise auth hook
+│   │   ├── posts_controller.rb              # Post CRUD + search + My Threads
+│   │   ├── answers_controller.rb            # Answer create/destroy/accept
+│   │   ├── likes_controller.rb              # Like toggle endpoints
+│   │   └── users/omniauth_callbacks_controller.rb # Google SSO callback handler
+│   ├── jobs/
+│   │   └── expire_posts_job.rb              # Background cleanup for expired threads
 │   ├── queries/
-│   │   └── post_search_query.rb        # Multi-filter feed search service
+│   │   └── post_search_query.rb             # Multi-filter feed search service
 │   ├── services/
-│   │   └── taxonomy_seeder.rb          # Seeds topics & tags (TaxonomySeeder)
+│   │   └── taxonomy_seeder.rb               # Seeds topics & tags (TaxonomySeeder)
 │   ├── models/
-│   │   ├── post.rb                     # Post validations + taxonomy + status helpers
-│   │   ├── answer.rb                   # Answer validations + reveal support
-│   │   ├── like.rb                     # Like uniqueness + associations
-│   │   ├── tag.rb / topic.rb / post_tag.rb # Taxonomy models
-│   │   └── user.rb                     # Devise user with anonymous handle + OmniAuth
-│   ├── views/posts/                    # Index/show/new templates & shared form partial
-│   ├── views/layouts/application.html.erb # Main layout (nav, flashes)
-│   ├── helpers/application_helper.rb   # `display_author` pseudonym helper
+│   │   ├── post.rb                          # Post validations + taxonomy + status helpers
+│   │   ├── answer.rb                        # Answer validations + reveal support
+│   │   ├── like.rb                          # Like uniqueness + associations
+│   │   ├── thread_identity.rb               # Thread-specific pseudonyms
+│   │   ├── audit_log.rb                     # Records identity reveals/unlocks
+│   │   ├── tag.rb / topic.rb / post_tag.rb  # Taxonomy models
+│   │   └── user.rb                          # Devise user with anonymous handle + OmniAuth
+│   ├── views/posts/                         # Index/show/new templates & shared form partial
+│   ├── views/layouts/application.html.erb   # Main layout (nav, flashes)
+│   ├── helpers/application_helper.rb        # `display_author` pseudonym helper
 │   └── javascript/
 │       ├── controllers/post_show_controller.js # Toggles answer form
 │       └── controllers/tag_picker_controller.js # Enforces tag selection limits
@@ -178,12 +185,17 @@ CU_Blueboard/
 ├── docs/
 │   └── proposal.txt                    # Iteration proposal document
 ├── features/
-│   ├── answers/add_answer.feature      # Cucumber scenario for answering
-│   ├── posts/browse_posts.feature      # Browse & search flow with anonymity check
-│   ├── posts/create_post.feature       # Signup + post creation flow
-│   ├── posts/like_post.feature         # Like/unlike toggle flow
-│   ├── step_definitions/post_steps.rb  # Shared step implementations
-│   └── support/env.rb                  # Cucumber+DatabaseCleaner setup
+│   ├── answers/add_answer.feature           # Answering and delete permissions
+│   ├── auth/google_sign_in.feature          # Google OAuth flows (success + rejection)
+│   ├── posts/accept_answer.feature          # Accept + lock + reopen threads
+│   ├── posts/browse_posts.feature           # Browse/search feed + My Threads
+│   ├── posts/create_post.feature            # Signup + post creation flow
+│   ├── posts/expire_posts_job.feature       # ExpirePostsJob cleanup scenario
+│   ├── posts/like_post.feature              # Like/unlike toggle flow
+│   ├── posts/reveal_identity.feature        # Identity reveal flows
+│   ├── posts/thread_pseudonym.feature       # Thread-specific pseudonym checks
+│   ├── step_definitions/post_steps.rb       # Shared step implementations
+│   └── support/env.rb                       # Cucumber+DatabaseCleaner/OmniAuth setup
 ├── lib/tasks/cucumber.rake             # Rake tasks for Cucumber profiles
 ├── spec/
 │   ├── factories/{users,posts,answers,likes}.rb # FactoryBot fixtures
@@ -198,5 +210,5 @@ CU_Blueboard/
 ├── test/system/.keep                   # Placeholder to satisfy Rails system-test task
 ├── test/test_helper.rb                 # Remaining Minitest harness (empty)
 ├── README.md                           # Iteration instructions & deliverables
-└── Gemfile                             # Dependencies (Rails 8.1, Devise, etc.)
+└── Gemfile                             # Dependencies (Rails 8.1, Devise, OmniAuth, etc.)
 ```

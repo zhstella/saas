@@ -22,6 +22,17 @@ Before do
   TaxonomySeeder.seed!
 end
 
+Before('@omniauth') do
+  OmniAuth.config.test_mode = true
+end
+
+After('@omniauth') do
+  OmniAuth.config.test_mode = false
+  OmniAuth.config.mock_auth[:google_oauth2] = nil
+  Rails.application.env_config['devise.mapping'] = nil
+  Rails.application.env_config['omniauth.auth'] = nil
+end
+
 # By default, any exception happening in your Rails application will bubble up
 # to Cucumber so that your scenario will fail. This is a different from how
 # your application behaves in the production environment, where an error page will

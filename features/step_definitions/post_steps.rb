@@ -1,3 +1,6 @@
+require 'securerandom'
+require 'omniauth'
+
 Given('the following posts exist:') do |table|
   table.hashes.each do |row|
     create(:post, title: row['title'], body: row['body'])
@@ -30,6 +33,11 @@ end
 
 When('I visit the home page') do
   visit '/'
+end
+
+When('I open My Threads') do
+  visit '/'
+  click_link 'My threads'
 end
 
 When('I search for {string}') do |query|
@@ -228,4 +236,46 @@ def select_required_topic_and_tags
 
   select Post::SCHOOLS.first, from: 'School'
   fill_in 'Course', with: 'COMS W4152'
+end
+
+When('I delete the most recent answer') do
+  within(all('.comment-card').last) do
+    click_button 'Delete Answer'
+  end
+end
+
+When('I attempt to delete the most recent answer without permission') do
+  answer = Answer.order(created_at: :desc).first
+  raise 'No answers available to delete' unless answer
+
+  path = Rails.application.routes.url_helpers.post_answer_path(answer.post, answer)
+  page.driver.submit :delete, path, {}
+  if page.driver.respond_to?(:follow_redirect!)
+    page.driver.follow_redirect!
+  end
+end
+
+Given('OmniAuth is mocked for {string}') do |email|
+  OmniAuth.config.test_mode = true
+  auth_hash = {
+    provider: 'google_oauth2',
+    uid: SecureRandom.uuid,
+    info: { email: email }
+  }
+  OmniAuth.config.mock_auth[:google_oauth2] = OmniAuth::AuthHash.new(auth_hash)
+  Rails.application.env_config['devise.mapping'] = Devise.mappings[:user]
+  Rails.application.env_config['omniauth.auth'] = OmniAuth.config.mock_auth[:google_oauth2]
+end
+
+When('I finish Google login') do
+  visit Rails.application.routes.url_helpers.user_google_oauth2_omniauth_callback_path
+end
+
+Given('the post {string} expired {int} days ago') do |title, days|
+  post = Post.find_by!(title: title)
+  post.update_columns(expires_at: days.days.ago)
+end
+
+When('the expire posts job runs') do
+  ExpirePostsJob.perform_now
 end
