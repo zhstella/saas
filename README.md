@@ -162,12 +162,12 @@ Add moderator emails to the `MODERATOR_EMAILS` environment variable (comma-separ
 **Local Development:**
 ```bash
 # .env file
-MODERATOR_EMAILS=moderator@columbia.edu,admin@columbia.edu
+MODERATOR_EMAILS=your-email@columbia.edu  # Replace with your test email
 ```
 
 **Production (Heroku):**
 ```bash
-heroku config:set MODERATOR_EMAILS="email1@columbia.edu,email2@columbia.edu"
+heroku config:set MODERATOR_EMAILS="your-email@columbia.edu"  # Replace with actual moderator emails
 ```
 
 #### How It Works
@@ -180,7 +180,7 @@ heroku config:set MODERATOR_EMAILS="email1@columbia.edu,email2@columbia.edu"
 For local development/testing, you can manually assign roles via Rails console:
 ```ruby
 user = User.find_by(email: 'someone@columbia.edu')
-user.update(role: :moderator)  # or :staff, :admin
+user.update(role: :moderator)
 ```
 
 ### OpenAI Moderation API (Automated Content Screening)
