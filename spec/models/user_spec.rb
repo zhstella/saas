@@ -82,4 +82,55 @@ RSpec.describe User, type: :model do
       }.to change(Like, :count).by(-1)
     end
   end
+
+  describe '.from_omniauth' do
+    def build_auth_hash(overrides = {})
+      OmniAuth::AuthHash.new({
+        provider: 'google_oauth2',
+        uid: 'uid-123',
+        info: { email: 'student@columbia.edu' }
+      }.deep_merge(overrides))
+    end
+
+    it 'returns nil when the email domain is not allowed' do
+      auth = build_auth_hash(info: { email: 'user@gmail.com' })
+      result = nil
+
+      expect {
+        result = described_class.from_omniauth(auth)
+      }.not_to change(described_class, :count)
+
+      expect(result).to be_nil
+    end
+
+    it 'returns an existing user when provider and uid already match' do
+      user = create(:user, provider: 'google_oauth2', uid: 'uid-123', email: 'student@columbia.edu')
+      auth = build_auth_hash(uid: 'uid-123', info: { email: user.email })
+
+      expect(described_class.from_omniauth(auth)).to eq(user)
+    end
+
+    it 'links an existing email/password user to Google credentials' do
+      user = create(:user, provider: nil, uid: nil, email: 'linked@columbia.edu')
+      auth = build_auth_hash(uid: 'google-uid', info: { email: user.email })
+
+      result = described_class.from_omniauth(auth)
+
+      expect(result).to eq(user)
+      expect(user.reload.uid).to eq('google-uid')
+      expect(user.provider).to eq('google_oauth2')
+    end
+
+    it 'creates a new user when no existing record is found' do
+      auth = build_auth_hash(uid: 'fresh-uid', info: { email: 'new@columbia.edu' })
+
+      expect {
+        @new_user = described_class.from_omniauth(auth)
+      }.to change(described_class, :count).by(1)
+
+      expect(@new_user.email).to eq('new@columbia.edu')
+      expect(@new_user.provider).to eq('google_oauth2')
+      expect(@new_user.uid).to eq('fresh-uid')
+    end
+  end
 end
