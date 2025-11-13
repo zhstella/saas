@@ -4,13 +4,20 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
 
   // 1. 定义这个 controller 需要操作的 "目标" (target)
-  //    我们将把那个隐藏的 div 命名为 "answerForm"
-  static targets = [ "answerForm" ]
+  static targets = [ "answerForm", "blurredContent", "appealOverlay" ]
 
-  // 2. 这是我们将从 "Answers" 按钮调用的函数
+  // 2. Toggle answer form visibility
   toggleAnswerForm() {
-
-    // 3. 切换那个隐藏 div (answerFormTarget) 上的 'visible' class
     this.answerFormTarget.classList.toggle('visible');
+  }
+
+  // 3. Show content when user appeals (remove blur)
+  showContent(event) {
+    event.preventDefault()
+
+    if (this.hasBlurredContentTarget && this.hasAppealOverlayTarget) {
+      this.blurredContentTarget.classList.remove('blurred')
+      this.appealOverlayTarget.style.display = 'none'
+    }
   }
 }

@@ -35,7 +35,7 @@ class User < ApplicationRecord
     moderator? || staff? || admin?
   end
 
-  # 3. 修复了“账户链接”逻辑的 OmniAuth 方法
+  # 3. 修复了"账户链接"逻辑的 OmniAuth 方法
   def self.from_omniauth(auth)
     # --- 这是【新】的域名检查逻辑 ---
     allowed_domains = [ '@columbia.edu', '@barnard.edu' ]
@@ -46,35 +46,39 @@ class User < ApplicationRecord
     end
     # --- 结束新的检查 ---
 
+    # Check moderator whitelist (for all cases)
+    moderator_emails = Rails.application.config.moderator_emails || []
+    target_role = moderator_emails.include?(auth.info.email) ? :moderator : :student
 
     # 案例 1: 用户以前用 Google 登录过
     # 正常通过 provider 和 uid 查找
     user = User.find_by(provider: auth.provider, uid: auth.uid)
-    return user if user
+    if user
+      # Update role based on current whitelist
+      user.update(role: target_role) if user.role.to_s != target_role.to_s
+      return user
+    end
 
     # 案例 2: 找不到。尝试通过 email 查找
-    # (这处理了“用户先用 Email/Password 注册”的情况)
+    # (这处理了"用户先用 Email/Password 注册"的情况)
     user = User.find_by(email: auth.info.email)
     if user
-      # 找到了！更新这个用户的 provider 和 uid 来“链接”Google 账户
+      # 找到了！更新这个用户的 provider 和 uid 来"链接"Google 账户
       user.update(
         provider: auth.provider,
-        uid: auth.uid
+        uid: auth.uid,
+        role: target_role  # Also update role based on whitelist
       )
       return user # 返回这个刚被链接的账户
     end
 
     # 案例 3: 数据库里完全没有这个用户。创建一个全新的。
-    # Check if email is in moderator whitelist
-    moderator_emails = Rails.application.config.moderator_emails || []
-    user_role = moderator_emails.include?(auth.info.email) ? :moderator : :student
-
     User.create(
       provider: auth.provider,
       uid: auth.uid,
       email: auth.info.email,
       password: Devise.friendly_token[0, 20],
-      role: user_role
+      role: target_role
     )
   end
 end

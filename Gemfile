@@ -64,6 +64,9 @@ group :development, :test do
 
   # Factories for concise test data
   gem 'factory_bot_rails'
+
+  # Load environment variables from .env file
+  gem 'dotenv-rails'
 end
 
 group :development do

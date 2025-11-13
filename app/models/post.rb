@@ -12,6 +12,10 @@ class Post < ApplicationRecord
   belongs_to :accepted_answer, class_name: 'Answer', optional: true
   belongs_to :redacted_by, class_name: 'User', optional: true
 
+  # Serialize AI moderation data
+  serialize :ai_categories, coder: JSON
+  serialize :ai_scores, coder: JSON
+
   after_create :ensure_thread_identity
   after_create_commit :screen_content_async
   scope :active, -> { where('expires_at IS NULL OR expires_at > ?', Time.current) }
@@ -53,20 +57,50 @@ class Post < ApplicationRecord
   }.freeze
   enum :redaction_state, REDACTION_STATES, default: :visible
 
-  # 辅助方法：检查特定用户是否已点赞
-  def liked_by?(user)
+  # Vote helper methods
+  def upvotes_count
+    likes.upvotes.count
+  end
+
+  def downvotes_count
+    likes.downvotes.count
+  end
+
+  def net_score
+    upvotes_count - downvotes_count
+  end
+
+  def voted_by?(user)
     user_id = extract_user_id(user)
     return false unless user_id
 
     likes.exists?(user_id: user_id)
   end
 
-  # 辅助方法：找到特定用户的点赞
-  def find_like_by(user)
+  def find_vote_by(user)
     user_id = extract_user_id(user)
     return nil unless user_id
 
     likes.find_by(user_id: user_id)
+  end
+
+  # Legacy compatibility
+  def liked_by?(user)
+    vote = find_vote_by(user)
+    vote&.upvote? || false
+  end
+
+  def find_like_by(user)
+    find_vote_by(user)
+  end
+
+  # Appeal methods
+  def request_appeal!
+    update!(appeal_requested: true)
+  end
+
+  def clear_appeal!
+    update!(appeal_requested: false)
   end
 
 

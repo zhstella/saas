@@ -62,16 +62,29 @@ RSpec.describe ScreenPostContentJob, type: :job do
 
     it 'flags the post and logs when the content is unsafe' do
       allow(Rails.logger).to receive(:info)
-      expect(client).to receive(:screen).with(text: content_payload).and_return(flagged: true)
+      moderation_result = {
+        flagged: true,
+        categories: { 'violence' => true, 'hate' => false, 'sexual' => false },
+        category_scores: { 'violence' => 0.95, 'hate' => 0.02, 'sexual' => 0.01 }
+      }
+      expect(client).to receive(:screen).with(text: content_payload).and_return(moderation_result)
 
       perform_job
 
-      expect(post.reload.ai_flagged?).to be(true)
+      post.reload
+      expect(post.ai_flagged?).to be(true)
+      expect(post.ai_categories).to eq({ 'violence' => true, 'hate' => false, 'sexual' => false })
+      expect(post.ai_scores).to eq({ 'violence' => 0.95, 'hate' => 0.02, 'sexual' => 0.01 })
       expect(Rails.logger).to have_received(:info).with(/Post ##{post.id} flagged by AI moderation/).at_least(:once)
     end
 
     it 'leaves the post untouched when the content is safe' do
-      expect(client).to receive(:screen).with(text: content_payload).and_return(flagged: false)
+      safe_result = {
+        flagged: false,
+        categories: {},
+        category_scores: {}
+      }
+      expect(client).to receive(:screen).with(text: content_payload).and_return(safe_result)
 
       perform_job
 

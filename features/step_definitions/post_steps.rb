@@ -193,15 +193,23 @@ Then('the posts list should not reveal email addresses') do
 end
 
 When('I like the post') do
-  click_button('Like (👍 0)')
+  # Find and click the upvote button
+  within('.vote-controls') do
+    all('.btn-upvote').first.click
+  end
 end
 
 Then('the post like count should be {int}') do |count|
-  expect(page).to have_content("👍 #{count}")
+  within('.vote-score') do
+    expect(page).to have_content(count.to_s)
+  end
 end
 
 When('I unlike the post') do
-  click_button('Unlike (👍 1)')
+  # Click upvote again to toggle it off
+  within('.vote-controls') do
+    all('.btn-upvote').first.click
+  end
 end
 
 Then('I should see the thread pseudonym for {string} on {string}') do |email, title|
@@ -251,7 +259,7 @@ def select_required_topic_and_tags
   select topic.name, from: 'Topic'
 
   Tag.alphabetical.limit(2).each do |tag|
-    check("post_tag_#{tag.id}", allow_label_click: true)
+    check("post_tag_#{tag.id}")
   end
 
   select Post::SCHOOLS.first, from: 'School'

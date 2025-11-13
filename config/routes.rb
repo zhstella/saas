@@ -36,12 +36,17 @@ Rails.application.routes.draw do
   resources :posts do
     member do
       patch :reveal_identity
+      patch :hide_identity
       patch :unlock
+      post :appeal
     end
     collection do
       post :preview
       get :my_threads
     end
+
+    post 'upvote', to: 'likes#upvote', on: :member
+    post 'downvote', to: 'likes#downvote', on: :member
 
     resources :answers, only: [ :create, :destroy, :edit, :update ] do
       member do

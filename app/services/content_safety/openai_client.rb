@@ -18,7 +18,7 @@ module ContentSafety
 
     # Screen text content for policy violations
     # @param text [String] The text to screen
-    # @return [Hash] { flagged: Boolean }
+    # @return [Hash] { flagged: Boolean, categories: Hash, category_scores: Hash }
     # @raise [Error] if API request fails
     def screen(text:)
       uri = URI(API_URL)
@@ -63,7 +63,9 @@ module ContentSafety
       end
 
       {
-        flagged: result['flagged'] || false
+        flagged: result['flagged'] || false,
+        categories: result['categories'] || {},
+        category_scores: result['category_scores'] || {}
       }
     end
   end

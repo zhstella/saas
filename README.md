@@ -16,6 +16,7 @@
 - Bundler (`gem install bundler`)
 - SQLite 3 (ships with macOS/Linux)
 - Google OAuth 2.0 client ID & secret configured for the CU/Barnard domains (see *Configure Google OAuth* below)
+- Optional: OpenAI API Key for AI-powered content screening (see *OpenAI Moderation API* section below)
 
 ## Local Setup (clone → run app)
 1. **Clone the repo** and `cd` into it.
@@ -79,8 +80,12 @@
 - Collaborate inside threads with answer-level comments, including ownership-protected create/delete actions and comment logging for pseudonym continuity.
 - Catch duplicates before publishing via the composer's "Possible similar threads" panel, powered by the new `DuplicatePostFinder` service the preview and edit forms call.
 - Edit posts and answers after publishing while preserving the full revision history so classmates and moderators can trace changes; authors can see their timelines inline on the thread page.
-- Moderate content with role-based permissions: moderators/staff can redact posts and answers for policy violations, with transparent placeholder messages shown to general users while authors retain access to original content and appeal workflows.
-- Access the moderation dashboard (`/moderation/posts`) to review redacted content, view audit trails, and restore posts after review (moderator/staff only).
+
+### Default flows covered in Project Demo
+- Moderate content with role-based permissions: moderators can redact posts and answers for policy violations, with transparent placeholder messages shown to general users while authors retain access to original content and appeal workflows.
+- Access the moderation dashboard (`/moderation/posts`) to review redacted content, view audit trails, and restore posts after review (moderator only).
+- Configure moderators via environment variable whitelist with automatic role assignment on OAuth login, eliminating manual role management.
+- Screen content automatically with OpenAI Moderation API detecting violence, hate, self-harm, and harassment; authors can submit appeals for moderator review.
 
 
 ## Test Suites
@@ -192,24 +197,12 @@ The moderation system integrates with OpenAI's Moderation API for automated cont
   ```
 - **Getting an API Key**: Visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) to create a free account and generate your API key.
 
-**Implemented Features:**
-- Automatic content screening on post creation via background job (`ScreenPostContentJob`)
-- Posts flagged by AI are marked with `ai_flagged: true` in the database
-- OpenAI's `omni-moderation-latest` model detects policy violations automatically
-- Flagged posts appear in the moderation dashboard for human review
-- Non-blocking: Post creation succeeds even if API call fails
-
-**Workflow:**
-1. User creates a post
-2. Background job automatically sends content to OpenAI Moderation API
-3. If flagged, post is marked `ai_flagged: true`
-4. Moderators can review flagged posts at `/moderation/posts`
-5. Moderators make final decision to redact or approve
+**Key Features:**
+- Automatic AI screening on post creation detects violence, hate, self-harm, and harassment with detailed category scores displayed to moderators
+- Moderator dashboard shows flagged posts with appeal system allowing authors to request human review of AI decisions
 
 **Under Consideration:**
-- Detailed category analysis (violence, harassment, hate, sexual content, etc.) with confidence scores
-- Auto-hide workflow for severely flagged posts with author appeal system
-- Email notifications to moderators for flagged content
+- Email notifications to moderators for flagged content and appeal requests
 
 ## Addressing Iteration 1 Feedback
 - Added the missing user-story coverage that graders flagged (blank search alert, invalid post/answer validations, and guest redirects) so every scenario now runs via Cucumber (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/answers/add_answer.feature`).

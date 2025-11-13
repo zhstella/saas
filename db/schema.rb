@@ -66,6 +66,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.integer "post_id", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.integer "vote_type", default: 1, null: false
     t.index ["post_id"], name: "index_likes_on_post_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
   end
@@ -93,7 +94,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
 
   create_table "posts", force: :cascade do |t|
     t.integer "accepted_answer_id"
+    t.text "ai_categories"
     t.boolean "ai_flagged", default: false, null: false
+    t.text "ai_scores"
+    t.boolean "appeal_requested", default: false, null: false
     t.text "body"
     t.string "course_code"
     t.datetime "created_at", null: false

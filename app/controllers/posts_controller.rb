@@ -89,12 +89,40 @@ class PostsController < ApplicationController
     end
   end
 
+  def hide_identity
+    if @post.user == current_user
+      if @post.update(show_real_identity: false)
+        AuditLog.create!(
+          user: current_user,
+          performed_by: current_user,
+          auditable: @post,
+          action: 'identity_hidden',
+          metadata: { post_id: @post.id }
+        )
+        redirect_to @post, notice: 'Your identity is now hidden on this thread.'
+      else
+        redirect_to @post, alert: 'Unable to hide identity.'
+      end
+    else
+      redirect_to @post, alert: 'You do not have permission to hide this identity.'
+    end
+  end
+
   def unlock
     if @post.locked? && @post.accepted_answer.present?
       @post.unlock!
       redirect_to @post, notice: 'Thread reopened.'
     else
       redirect_to @post, alert: 'No accepted answer to unlock.'
+    end
+  end
+
+  def appeal
+    if @post.user == current_user && @post.ai_flagged?
+      @post.request_appeal!
+      redirect_to @post, notice: 'Appeal submitted. A moderator will review your request.'
+    else
+      redirect_to @post, alert: 'Unable to submit appeal.'
     end
   end
 

@@ -40,19 +40,13 @@
             </span>
           </div>
 
-          <div class="post-card-body">
-            <p class="post-excerpt">
-              <%= truncate(post.redacted_body || post.body, length: 200) %>
-            </p>
-          </div>
-
           <div class="post-card-actions">
-            <%= link_to "View Full Post", post_path(post), class: "form-secondary-button" %>
-            <%= link_to "View Details", moderation_post_path(post), class: "form-secondary-button" %>
+            <%= link_to "View Post", post_path(post), class: "mod-btn mod-btn-review" %>
+            <%= link_to "Details", moderation_post_path(post), class: "mod-btn mod-btn-details" %>
             <%= button_to "Restore",
                           unredact_moderation_post_path(post),
                           method: :patch,
-                          class: "form-submit-button",
+                          class: "mod-btn mod-btn-approve",
                           data: { turbo_confirm: "Restore this post?" } %>
           </div>
         </div>
@@ -86,9 +80,16 @@
             <h3 class="post-title">
               <%= link_to post.title, post_path(post) %>
             </h3>
-            <span class="post-card-status ai-flagged">
-              AI Flagged
-            </span>
+            <div class="status-badges">
+              <span class="post-card-status ai-flagged">
+                AI Flagged
+              </span>
+              <% if post.appeal_requested? %>
+                <span class="post-card-status appeal-requested">
+                  Appeal Requested
+                </span>
+              <% end %>
+            </div>
           </div>
 
           <div class="post-card-meta">
@@ -103,25 +104,33 @@
             </span>
           </div>
 
-          <div class="post-card-body">
-            <p class="post-excerpt">
-              <%= truncate(post.body, length: 200) %>
-            </p>
-          </div>
+          <%# AI Categories %>
+          <% if post.ai_categories.present? %>
+            <div class="ai-categories">
+              <% post.ai_categories.each do |category, flagged| %>
+                <% if flagged %>
+                  <% score = post.ai_scores&.dig(category) %>
+                  <span class="category-badge category-<%= category %>">
+                    <%= category.titleize %><% if score %> (<%= (score * 100).round %>%)<% end %>
+                  </span>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
 
           <div class="post-card-actions">
-            <%= link_to "Review Post", post_path(post), class: "form-secondary-button" %>
-            <%= button_to "Redact (Full)",
+            <%= link_to "Review Post", post_path(post), class: "mod-btn mod-btn-review" %>
+            <%= button_to "Redact",
                           redact_moderation_post_path(post),
                           method: :patch,
                           params: { reason: 'ai_flagged_content', state: 'redacted' },
-                          class: "form-submit-button",
+                          class: "mod-btn mod-btn-redact",
                           data: { turbo_confirm: "Redact this AI-flagged post?" } %>
-            <%= button_to "Approve (Clear Flag)",
+            <%= button_to "Approve",
                           post_path(post),
                           method: :patch,
                           params: { post: { ai_flagged: false } },
-                          class: "form-secondary-button",
+                          class: "mod-btn mod-btn-approve",
                           data: { turbo_confirm: "Clear AI flag and approve this post?" } %>
           </div>
         </div>
@@ -142,6 +151,13 @@
 </div>
 
 <style>
+  .status-badges {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
   .post-card-status {
     display: inline-block;
     padding: 0.25em 0.75em;
@@ -166,8 +182,190 @@
     color: white;
   }
 
+  .post-card-status.appeal-requested {
+    background-color: #007bff;
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
   .ai-flagged-card {
+    display: block;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px 24px;
+    margin-bottom: 16px;
     border-left: 4px solid #ff6b6b;
+    transition: box-shadow 0.2s ease-in-out;
+  }
+
+  .ai-flagged-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .post-card {
+    display: block;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    transition: box-shadow 0.2s ease-in-out;
+  }
+
+  .post-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .post-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+  }
+
+  .post-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .post-card-body {
+    margin-top: 12px;
+  }
+
+  .post-excerpt {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .ai-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-top: 0.75em;
+    margin-bottom: 0.5em;
+  }
+
+  .category-badge {
+    display: inline-block;
+    padding: 0.35em 0.75em;
+    border-radius: 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+
+  /* Category badge colors - all variations */
+  .category-badge[class*="violence"],
+  .category-badge[class*="violent"] {
+    background-color: #dc3545;
+  }
+
+  .category-badge[class*="hate"] {
+    background-color: #fd7e14;
+  }
+
+  .category-badge[class*="sexual"] {
+    background-color: #6f42c1;
+  }
+
+  .category-badge[class*="self-harm"],
+  .category-badge[class*="self_harm"] {
+    background-color: #e83e8c;
+  }
+
+  .category-badge[class*="harassment"] {
+    background-color: #ff8c00;
+  }
+
+  /* Fallback for any unmatched categories */
+  .category-badge {
+    background-color: #6c757d;
+  }
+
+  /* Moderation Action Buttons */
+  .post-card-actions {
+    display: flex;
+    gap: 0.75em;
+    margin-top: 1em;
+    flex-wrap: wrap;
+  }
+
+  .mod-btn {
+    padding: 0.65em 1.5em;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .mod-btn-review {
+    background-color: #007bff;
+    color: white;
+    border: 2px solid #007bff;
+  }
+
+  .mod-btn-review:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+
+  .mod-btn-redact {
+    background-color: #dc3545;
+    color: white;
+    border: 2px solid #dc3545;
+  }
+
+  .mod-btn-redact:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+
+  .mod-btn-approve {
+    background-color: #28a745;
+    color: white;
+    border: 2px solid #28a745;
+  }
+
+  .mod-btn-approve:hover {
+    background-color: #218838;
+    border-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+  }
+
+  .mod-btn-details {
+    background-color: #6c757d;
+    color: white;
+    border: 2px solid #6c757d;
+  }
+
+  .mod-btn-details:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
   }
 
   .moderator-panel {

@@ -22,8 +22,12 @@ class ScreenPostContentJob < ApplicationJob
 
       # Update post if flagged
       if result[:flagged]
-        post.update!(ai_flagged: true)
-        Rails.logger.info "Post ##{post.id} flagged by AI moderation"
+        post.update!(
+          ai_flagged: true,
+          ai_categories: result[:categories],
+          ai_scores: result[:category_scores]
+        )
+        Rails.logger.info "Post ##{post.id} flagged by AI moderation: #{result[:categories].select { |k, v| v }.keys.join(', ')}"
       end
     rescue ContentSafety::OpenaiClient::MissingApiKeyError => e
       # Skip silently if API key not configured

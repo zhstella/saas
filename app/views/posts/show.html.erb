@@ -6,11 +6,33 @@
 
   <%# --- Post title and author information --- %>
   <h2 class="page-title"><%= @post.title %></h2>
-  <div class="post-meta">
-    <span class="post-author">
-      Posted by: <strong><%= display_author(@post.user, context: @post) %></strong>
-    </span>
-    <span class="post-time"><%= time_ago_in_words(@post.created_at) %> ago</span>
+  <div class="post-meta-header">
+    <div class="post-meta">
+      <span class="post-author">
+        Posted by: <strong><%= display_author(@post.user, context: @post) %></strong>
+        <% if current_user == @post.user && !@post.show_real_identity? %>
+          <span class="anonymous-badge">(anonymous)</span>
+        <% end %>
+      </span>
+      <span class="post-time"><%= time_ago_in_words(@post.created_at) %> ago</span>
+    </div>
+    <% if current_user == @post.user %>
+      <% if !@post.show_real_identity? %>
+        <%= button_to "Reveal My Identity",
+                      reveal_identity_post_path(@post),
+                      method: :patch,
+                      class: "btn-reveal-inline",
+                      data: { turbo_confirm: "Reveal your real identity on this thread?" } %>
+      <% else %>
+        <%= button_to "Hide My Identity",
+                      hide_identity_post_path(@post),
+                      method: :patch,
+                      class: "btn-hide-inline",
+                      data: { turbo_confirm: "Return to anonymous mode?" } %>
+      <% end %>
+    <% elsif @post.show_real_identity? %>
+      <p class="identity-revealed-badge">Author chose to reveal their identity.</p>
+    <% end %>
   </div>
 
   <% if @post.expires_at.present? %>
@@ -47,16 +69,53 @@
     <% end %>
   <% end %>
 
-  <% if current_user == @post.user && !@post.show_real_identity? %>
-    <div class="identity-controls">
-      <%= button_to "Reveal My Identity",
-                    reveal_identity_post_path(@post),
-                    method: :patch,
-                    class: "form-submit-button identity-button",
-                    data: { turbo_confirm: "Reveal your real identity on this thread?" } %>
-    </div>
-  <% elsif @post.show_real_identity? %>
-    <p class="identity-badge">Author chose to reveal their identity.</p>
+  <%# --- AI-Flagged Warning for Author/Moderator --- %>
+  <% if @post.ai_flagged? && @post.visible? %>
+    <% if @post.user == current_user || current_user&.can_moderate? %>
+      <div class="ai-flagged-container">
+        <div class="ai-flagged-warning-flex">
+          <% if @post.ai_categories.present? %>
+            <% flagged_categories = @post.ai_categories.select { |k, v| v }.keys %>
+            <% if flagged_categories.any? %>
+              <h4>Flagged for: <%= flagged_categories.map(&:titleize).join(', ') %></h4>
+            <% else %>
+              <h4>This post has been flagged for review</h4>
+            <% end %>
+          <% else %>
+            <h4>This post has been flagged for review</h4>
+          <% end %>
+          <p>This post was automatically flagged by our content screening system.</p>
+          <% if @post.user == current_user %>
+            <p class="alert-note">Submit an appeal if you disagree. Otherwise, this decision is final.</p>
+          <% end %>
+        </div>
+        <div class="actions-inline-box">
+          <% if @post.user == current_user && !@post.appeal_requested? %>
+            <h5>APPEAL</h5>
+            <%= button_to "Request Review",
+                          appeal_post_path(@post),
+                          method: :post,
+                          class: "btn-appeal-inline",
+                          data: { turbo_confirm: "Submit an appeal for moderator review?" } %>
+          <% elsif @post.appeal_requested? && @post.user == current_user %>
+            <div class="appeal-pending-notice">
+              <p>Appeal Pending</p>
+              <small>Awaiting moderator review</small>
+            </div>
+          <% end %>
+          <% if current_user&.can_moderate? %>
+            <h5 class="moderator-actions-title">MODERATOR ACTIONS</h5>
+            <%= button_to "Redact Post",
+                          redact_moderation_post_path(@post),
+                          method: :patch,
+                          class: "btn-redact-inline",
+                          form: { data: { turbo_frame: "_top" } },
+                          params: { reason: 'ai_flagged_content', state: 'redacted' },
+                          data: { turbo_confirm: "Redact this AI-flagged post?" } %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   <% end %>
 
   <%# --- Post body with conditional rendering for redacted content --- %>
@@ -94,65 +153,99 @@
         <%= @post.redacted_body || @post.body %>
       </div>
     <% else %>
-      <%# General users: Placeholder message %>
-      <div class="alert alert-info">
-        <p>This post is currently under review for content policy violations.</p>
+      <%# General users: Simple moderated message %>
+      <div class="alert alert-danger redacted-content-notice">
+        <h4>Content Moderated</h4>
+        <p>This content has been moderated and is not visible.</p>
       </div>
     <% end %>
   <% else %>
-    <%# Normal content display %>
-    <div class="post-body">
-      <%= @post.body %>
-    </div>
+    <%# Normal content display (with blur for AI-flagged author) %>
+    <% if @post.ai_flagged? && @post.user == current_user %>
+      <div class="ai-flagged-content-wrapper">
+        <div class="blurred-content blurred" data-post-show-target="blurredContent">
+          <div class="post-body">
+            <%= @post.body %>
+          </div>
+        </div>
+        <div class="view-content-overlay" data-post-show-target="appealOverlay">
+          <p class="view-content-message">Content hidden due to AI flagging</p>
+          <button type="button"
+                  class="btn-view-content"
+                  data-action="click->post-show#showContent">
+            View My Content
+          </button>
+        </div>
+      </div>
+    <% else %>
+      <div class="post-body">
+        <%= @post.body %>
+      </div>
+    <% end %>
   <% end %>
 
-  <%# --- Post actions (like / answer button) --- %>
-  <div class="post-actions">
-
-    <div class="post-actions-left">
+  <%# --- Post actions (centered layout) --- %>
+  <div class="post-actions-container">
+    <%# Vote System (Upvote/Downvote) - Center %>
+    <div class="vote-section-center">
       <% if user_signed_in? %>
-        <% if @post.liked_by?(current_user) %>
-          <%= button_to "Unlike (👍 #{@post.likes.count})",
-                        post_like_path(@post, @post.find_like_by(current_user)),
-                        method: :delete,
-                        class: "form-cancel-button" %>
-        <% else %>
-          <%= button_to "Like (👍 #{@post.likes.count})",
-                        post_likes_path(@post),
+        <% current_vote = @post.find_vote_by(current_user) %>
+        <div class="vote-controls">
+          <%= button_to upvote_post_path(@post),
                         method: :post,
-                        class: "form-cancel-button" %>
-        <% end %>
+                        class: "btn-vote-large btn-upvote #{'active' if current_vote&.upvote?}" do %>
+            <span class="vote-arrow">▲</span>
+          <% end %>
+          <div class="vote-score">
+            <%= @post.net_score %>
+          </div>
+          <%= button_to downvote_post_path(@post),
+                        method: :post,
+                        class: "btn-vote-large btn-downvote #{'active' if current_vote&.downvote?}" do %>
+            <span class="vote-arrow">▼</span>
+          <% end %>
+        </div>
       <% else %>
-        <span class="form-cancel-button disabled">👍 <%= @post.likes.count %></span>
+        <div class="vote-controls-guest">
+          <div class="vote-score-guest">
+            <%= @post.net_score %>
+          </div>
+          <small>votes</small>
+        </div>
       <% end %>
-
-      <%= link_to "Answers (#{ @answers.count })", "#",
-                  class: "form-cancel-button",
-                  data: { action: "click->post-show#toggleAnswerForm" } %>
     </div>
 
+    <%# Author Actions %>
     <% if @post.user == current_user %>
-      <div class="post-owner-actions">
-        <%= link_to "Edit Post", edit_post_path(@post), class: "form-secondary-button" %>
-        <%= button_to "Delete This Post", @post,
+      <div class="author-actions-group">
+        <%= link_to "Edit Post", edit_post_path(@post), class: "btn-action btn-edit" %>
+        <%= button_to "Delete Post", @post,
                     method: :delete,
-                    class: "btn-destructive",
-                    data: { turbo_confirm: "Are you sure..." } %>
+                    class: "btn-action btn-delete",
+                    data: { turbo_confirm: "Are you sure you want to delete this post?" } %>
       </div>
     <% end %>
 
-    <%# Moderator actions %>
-    <% if current_user&.can_moderate? && !@post.redacted? %>
-      <div class="moderator-actions">
+    <%# Moderator Actions - only if NOT AI-flagged (AI-flagged has inline actions) %>
+    <% if current_user&.can_moderate? && !@post.redacted? && !@post.ai_flagged? %>
+      <div class="moderator-panel-actions-bottom">
+        <h4 class="moderator-section-title">Moderator Actions</h4>
         <%= button_to "Redact Post",
                       redact_moderation_post_path(@post),
                       method: :patch,
-                      class: "btn-destructive",
+                      class: "btn-redact",
                       form: { data: { turbo_frame: "_top" } },
                       params: { reason: 'policy_violation', state: 'redacted' },
                       data: { turbo_confirm: "Redact this post for policy violations?" } %>
       </div>
     <% end %>
+  </div>
+
+  <%# Answers toggle %>
+  <div class="answers-toggle">
+    <%= link_to "Answers (#{ @answers.count })", "#",
+                class: "btn-answers-toggle",
+                data: { action: "click->post-show#toggleAnswerForm" } %>
   </div>
 
   <hr class="section-divider">
@@ -347,3 +440,481 @@
     <%= render 'revision_history', post: @post %>
   <% end %>
 </div>
+
+<style>
+  /* Author Meta Header */
+  .post-meta-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1em;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+
+  .anonymous-badge {
+    color: #6c757d;
+    font-size: 0.9em;
+    font-weight: normal;
+    margin-left: 0.5em;
+  }
+
+  .btn-reveal-inline {
+    padding: 0.4em 1em;
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-reveal-inline:hover {
+    background-color: #138496;
+  }
+
+  .btn-hide-inline {
+    padding: 0.4em 1em;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-hide-inline:hover {
+    background-color: #5a6268;
+  }
+
+  .identity-revealed-badge {
+    padding: 0.4em 1em;
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 6px;
+    font-size: 0.9em;
+    color: #0c5460;
+  }
+
+  /* AI-Flagged Container (Banner + Actions side by side) */
+  .ai-flagged-container {
+    display: flex;
+    gap: 1.5em;
+    background-color: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 1.25em;
+    margin: 1.5em 0;
+    align-items: flex-start;
+  }
+
+  .ai-flagged-warning-flex {
+    flex: 1;
+  }
+
+  .ai-flagged-warning-flex h4 {
+    color: #856404;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-size: 1.05em;
+    font-weight: 600;
+  }
+
+  .ai-flagged-warning-flex p {
+    color: #856404;
+    margin-bottom: 0.5em;
+    font-size: 0.95em;
+  }
+
+  .ai-flagged-warning-flex .alert-note {
+    font-size: 0.85em;
+    font-style: italic;
+    margin-bottom: 0;
+    color: #6c757d;
+  }
+
+  .actions-inline-box {
+    background-color: #fff;
+    border: 2px dashed #ffc107;
+    border-radius: 8px;
+    padding: 1em;
+    min-width: 200px;
+  }
+
+  .actions-inline-box h5 {
+    color: #856404;
+    font-size: 0.75em;
+    margin-top: 0;
+    margin-bottom: 0.75em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .moderator-actions-title {
+    margin-top: 1em;
+    padding-top: 0.75em;
+    border-top: 1px solid #ffc107;
+  }
+
+  .btn-appeal-inline {
+    padding: 0.6em 1.25em;
+    background-color: #007bff;
+    color: white;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .btn-appeal-inline:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+
+  .appeal-pending-notice {
+    text-align: center;
+    padding: 0.75em;
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 6px;
+  }
+
+  .appeal-pending-notice p {
+    margin: 0;
+    color: #0c5460;
+    font-weight: 600;
+    font-size: 0.9em;
+  }
+
+  .appeal-pending-notice small {
+    color: #0c5460;
+    font-size: 0.8em;
+  }
+
+  .btn-redact-inline {
+    padding: 0.6em 1.25em;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .btn-redact-inline:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+
+  /* Blurred Content for AI-Flagged Author */
+  .ai-flagged-content-wrapper {
+    position: relative;
+    margin: 1.5em 0;
+    min-height: 200px;
+  }
+
+  .blurred-content {
+    position: relative;
+  }
+
+  .blurred-content.blurred {
+    filter: blur(8px);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .view-content-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.98);
+    padding: 2.5em 3em;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 10;
+    border: 3px solid #ffc107;
+  }
+
+  .view-content-message {
+    font-size: 1.15em;
+    color: #495057;
+    margin-bottom: 1.5em;
+    font-weight: 600;
+  }
+
+  .btn-view-content {
+    padding: 0.85em 2.5em;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.05em;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+  }
+
+  .btn-view-content:hover {
+    background-color: #0056b3;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.5);
+  }
+
+  /* Redacted Content Notice */
+  .redacted-content-notice {
+    background-color: #f8d7da;
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+    text-align: center;
+  }
+
+  .redacted-content-notice h4 {
+    color: #721c24;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+
+  .redacted-content-notice h4::before {
+    content: "■ ";
+    margin-right: 0.5em;
+    font-weight: bold;
+  }
+
+  .redacted-content-notice p {
+    color: #721c24;
+    margin-bottom: 0;
+    font-size: 0.95em;
+  }
+
+  /* Post Actions Container */
+  .post-actions-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2em 0;
+    gap: 2em;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  /* Vote Section - Center Large */
+  .vote-section-center {
+    flex: 0 0 auto;
+    order: 0;
+  }
+
+  .vote-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75em;
+  }
+
+  .btn-vote-large {
+    width: 64px;
+    height: 64px;
+    border: 3px solid #dee2e6;
+    background-color: #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  }
+
+  .btn-vote-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn-upvote:hover {
+    border-color: #28a745;
+    background-color: #d4edda;
+  }
+
+  .btn-downvote:hover {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+  }
+
+  .btn-upvote.active {
+    border-color: #28a745;
+    background-color: #d4edda;
+  }
+
+  .btn-downvote.active {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+  }
+
+  .vote-arrow {
+    font-size: 2em;
+    font-weight: bold;
+    color: #6c757d;
+  }
+
+  .btn-upvote.active .vote-arrow {
+    color: #28a745;
+  }
+
+  .btn-downvote.active .vote-arrow {
+    color: #dc3545;
+  }
+
+  .btn-upvote:hover .vote-arrow {
+    color: #28a745;
+  }
+
+  .btn-downvote:hover .vote-arrow {
+    color: #dc3545;
+  }
+
+  .vote-score {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #212529;
+    padding: 0.25em 0;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .vote-controls-guest {
+    text-align: center;
+  }
+
+  .vote-score-guest {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #6c757d;
+  }
+
+  .vote-controls-guest small {
+    color: #adb5bd;
+    font-size: 0.9em;
+  }
+
+  /* Author Actions Group */
+  .author-actions-group {
+    display: flex;
+    gap: 0.75em;
+    flex-wrap: wrap;
+    order: 1;
+    position: absolute;
+    right: 0;
+  }
+
+  .btn-action {
+    padding: 0.6em 1.5em;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-action.btn-edit {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .btn-action.btn-edit:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+
+  .btn-action.btn-delete {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .btn-action.btn-delete:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+
+  /* Answers Toggle */
+  .answers-toggle {
+    text-align: center;
+    margin: 1.5em 0;
+  }
+
+  .btn-answers-toggle {
+    padding: 0.75em 2em;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .btn-answers-toggle:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+  }
+
+  /* Moderator Panel Bottom */
+  .moderator-panel-actions-bottom {
+    background-color: #fff3cd;
+    border: 2px dashed #ffc107;
+    border-radius: 8px;
+    padding: 1.25em;
+    margin-top: 1.5em;
+  }
+
+  .moderator-section-title {
+    color: #856404;
+    font-size: 0.85em;
+    margin-top: 0;
+    margin-bottom: 0.75em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .btn-redact {
+    padding: 0.6em 1.5em;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-redact:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+</style>
