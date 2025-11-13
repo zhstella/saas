@@ -2,13 +2,21 @@ class PostsController < ApplicationController
   before_action :set_post, only: [ :show, :destroy, :reveal_identity, :unlock ]
   before_action :ensure_active_post, only: [ :show, :reveal_identity ]
   before_action :authorize_owner!, only: [ :unlock ]
-  before_action :load_taxonomies, only: [ :new, :create, :preview, :index ]
+  before_action :load_taxonomies, only: [ :new, :create, :preview, :index, :my_threads ]
 
   # GET /posts
   def index
-    @filter_form = filter_params.presence || {}.with_indifferent_access
-    flash.now[:alert] = "Please enter text to search." if blank_search_requested?
+    build_filter_form
     @posts = PostSearchQuery.new(@filter_form).call
+  end
+
+  # GET /posts/my_threads
+  def my_threads
+    build_filter_form
+    @viewing_my_threads = true
+    filters = @filter_form.merge(author_id: current_user.id)
+    @posts = PostSearchQuery.new(filters).call
+    render :index
   end
 
   # GET /posts/1
@@ -109,6 +117,11 @@ class PostsController < ApplicationController
     return if @post.expires_at.blank? || @post.expires_at.future?
 
     redirect_to posts_path, alert: 'This post has expired.'
+  end
+
+  def build_filter_form
+    @filter_form = filter_params.presence || {}.with_indifferent_access
+    flash.now[:alert] = "Please enter text to search." if blank_search_requested?
   end
 
   def authorize_owner!

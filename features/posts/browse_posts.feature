@@ -40,3 +40,23 @@ Feature: Browse campus conversations
     And I sign in with email "active@example.com" and password "Password123!"
     When I visit the home page
     Then I should not see "Old roommates" in the posts list
+
+  Scenario: Viewing only my threads from the header
+    Given I register with email "creator@example.com" and password "Password123!"
+    And I create a post titled "My roommate search" with body "Looking for two roommates near campus."
+    And I sign out
+    And a user exists with email "neighbor@example.com" and password "Password123!"
+    And I sign in with email "neighbor@example.com" and password "Password123!"
+    And I create a post titled "General housing tips" with body "Check the leasing portal weekly."
+    And I sign out
+    And I sign in with email "creator@example.com" and password "Password123!"
+    When I open My Threads
+    Then I should see "My roommate search" in the posts list
+    And I should not see "General housing tips" in the posts list
+    And I should see "My Threads" on the page
+
+  Scenario: My Threads shows an empty state when no posts exist
+    Given a user exists with email "newbie@example.com" and password "Password123!"
+    And I sign in with email "newbie@example.com" and password "Password123!"
+    When I open My Threads
+    Then I should see "You have not created any threads yet." on the page

@@ -72,7 +72,7 @@
 
         <%# --- 3. 右侧 Nav --- %>
         <nav class="header-nav">
-          <a href="#">My threads</a>
+          <%= link_to 'My threads', my_threads_posts_path %>
           <%= button_to 'Logout', destroy_user_session_path, 
                         method: :delete, 
                         data: { turbo: "false" },

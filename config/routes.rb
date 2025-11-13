@@ -26,6 +26,7 @@ Rails.application.routes.draw do
     end
     collection do
       post :preview
+      get :my_threads
     end
 
     resources :answers, only: [:create, :destroy] do

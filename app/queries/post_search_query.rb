@@ -11,6 +11,7 @@ class PostSearchQuery
 
   def call
     scope = Post.active.includes(:topic, :tags).order(created_at: :desc)
+    scope = apply_author(scope)
     scope = apply_text(scope)
     scope = apply_topic(scope)
     scope = apply_tags(scope)
@@ -72,5 +73,11 @@ class PostSearchQuery
     return scope unless duration
 
     scope.where('posts.created_at >= ?', duration.ago)
+  end
+
+  def apply_author(scope)
+    return scope if filters[:author_id].blank?
+
+    scope.where(user_id: filters[:author_id])
   end
 end
