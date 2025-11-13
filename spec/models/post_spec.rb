@@ -18,6 +18,27 @@ RSpec.describe Post, type: :model do
     expect(post.errors[:body]).to include("can't be blank")
   end
 
+  it 'is invalid without a topic' do
+    post = build(:post, topic: nil)
+    expect(post).not_to be_valid
+    expect(post.errors[:topic]).to include("can't be blank")
+  end
+
+  it 'requires at least one tag' do
+    post = build(:post)
+    post.tags = []
+    expect(post).not_to be_valid
+    expect(post.errors[:tags]).to include('must include at least one tag')
+  end
+
+  it 'limits tags to five' do
+    post = build(:post)
+    extra_tags = create_list(:tag, 6)
+    post.tag_ids = extra_tags.map(&:id)
+    expect(post).not_to be_valid
+    expect(post.errors[:tags]).to include('cannot include more than 5 tags')
+  end
+
   it 'creates a thread identity after creation' do
     post = create(:post)
 
@@ -61,6 +82,27 @@ RSpec.describe Post, type: :model do
 
     it 'returns all posts when the query is blank' do
       expect(Post.search(nil)).to contain_exactly(matching_post, non_matching_post)
+    end
+  end
+
+  describe '#lock_with' do
+    it 'marks the post as solved when locking' do
+      post = create(:post)
+      answer = create(:answer, post: post)
+
+      post.lock_with(answer)
+
+      expect(post).to be_status_solved
+    end
+
+    it 'reopens the post when unlocking' do
+      post = create(:post)
+      answer = create(:answer, post: post)
+      post.lock_with(answer)
+
+      post.unlock!
+
+      expect(post).to be_status_open
     end
   end
 end

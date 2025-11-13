@@ -34,13 +34,13 @@ end
 
 When('I search for {string}') do |query|
   visit '/'
-  fill_in 'search', with: query
-  find('button.search-button').click
+  fill_in 'Search', with: query
+  click_button 'Apply Filters'
 end
 
 When('I submit an empty search') do
   visit '/'
-  find('button.search-button').click
+  click_button 'Apply Filters'
 end
 
 When('I create a post titled {string} with body {string}') do |title, body|
@@ -48,6 +48,7 @@ When('I create a post titled {string} with body {string}') do |title, body|
   click_link 'Submit a Post'
   fill_in 'Title', with: title
   fill_in 'Content', with: body
+  select_required_topic_and_tags
   click_button 'Submit Post'
   raise 'No current user set' unless @current_user_email
   user = User.find_by!(email: @current_user_email)
@@ -60,6 +61,7 @@ When('I create an expiring post titled {string} with body {string} that expires 
   fill_in 'Title', with: title
   fill_in 'Content', with: body
   select "#{days} days", from: 'post_expires_at'
+  select_required_topic_and_tags
   click_button 'Submit Post'
   raise 'No current user set' unless @current_user_email
   user = User.find_by!(email: @current_user_email)
@@ -71,6 +73,7 @@ When('I try to create a post without a title') do
   click_link 'Submit a Post'
   fill_in 'Title', with: ''
   fill_in 'Content', with: ''
+  select_required_topic_and_tags
   click_button 'Submit Post'
 end
 
@@ -99,6 +102,15 @@ end
 When('I submit an empty answer') do
   fill_in 'Answer Content', with: ''
   click_button 'Submit Answer'
+end
+
+When('I preview a post titled {string} with body {string}') do |title, body|
+  visit '/'
+  click_link 'Submit a Post'
+  fill_in 'Title', with: title
+  fill_in 'Content', with: body
+  select_required_topic_and_tags
+  click_button 'Preview Draft'
 end
 
 When('I open the post titled {string}') do |title|
@@ -204,4 +216,16 @@ end
 
 Then('I should not see {string}') do |text|
   expect(page).not_to have_content(text)
+end
+
+def select_required_topic_and_tags
+  topic = Topic.alphabetical.first
+  select topic.name, from: 'Topic'
+
+  Tag.alphabetical.limit(2).each do |tag|
+    check("post_tag_#{tag.id}", allow_label_click: true)
+  end
+
+  select Post::SCHOOLS.first, from: 'School'
+  fill_in 'Course', with: 'COMS W4152'
 end

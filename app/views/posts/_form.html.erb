@@ -32,6 +32,39 @@
   </div>
 
   <div class="form-field">
+    <%= form.label :topic_id, "Topic", class: "form-label" %>
+    <%= form.collection_select :topic_id, @topics, :id, :name, { prompt: "Select a topic" }, class: "form-input" %>
+  </div>
+
+  <div class="form-field" data-controller="tag-picker" data-tag-picker-max-value="<%= Post::TAG_LIMIT %>">
+    <%= form.label :tag_ids, "Tags", class: "form-label" %>
+    <div class="tag-picker">
+      <%= hidden_field_tag 'post[tag_ids][]', '' %>
+      <% @tags.each do |tag| %>
+        <% checkbox_id = "post_tag_#{tag.id}" %>
+        <label class="tag-chip" for="<%= checkbox_id %>">
+          <%= check_box_tag 'post[tag_ids][]', tag.id, post.tag_ids.include?(tag.id), id: checkbox_id, data: { tag_picker_target: 'input', action: 'tag-picker#toggle' } %>
+          <span><%= tag.name %></span>
+        </label>
+      <% end %>
+    </div>
+    <small class="form-hint">Choose between <%= Post::MIN_TAGS %> and <%= Post::TAG_LIMIT %> tags.</small>
+  </div>
+
+  <div class="form-field">
+    <%= form.label :school, class: "form-label" %>
+    <%= form.select :school,
+          options_for_select(Post::SCHOOLS, post.school),
+          { include_blank: 'Select a school (optional)' },
+          class: 'form-input' %>
+  </div>
+
+  <div class="form-field">
+    <%= form.label :course_code, "Course", class: "form-label" %>
+    <%= form.text_field :course_code, class: "form-input", placeholder: "e.g., COMS W4152" %>
+  </div>
+
+  <div class="form-field">
     <%= form.label :expires_at, "Make this post disappear after:", class: "form-label" %>
     <%= form.select :expires_at,
           options_for_select(expiry_options, selected: preselected_expiry),
@@ -40,7 +73,18 @@
     <small class="form-hint">Optional: choose an expiration window between 7 and 30 days.</small>
   </div>
 
+  <div class="form-field read-only-field">
+    <label class="form-label">Thread status</label>
+    <span class="status-pill"><%= (post.status || 'open').humanize %></span>
+  </div>
+
   <div class="form-actions">
+    <%= button_tag "Preview Draft",
+          type: 'submit',
+          class: 'form-secondary-button',
+          formaction: preview_posts_path,
+          formmethod: :post,
+          formnovalidate: true %>
     <%= form.submit "Submit Post", class: "form-submit-button" %>
     <%= link_to "Cancel", posts_path, 
             class: "form-cancel-button",

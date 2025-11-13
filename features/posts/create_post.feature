@@ -26,3 +26,9 @@ Feature: Ask a new question
     When I create an expiring post titled "Temporary tips" with body "This should disappear soon." that expires in 7 days
     And I open the post titled "Temporary tips"
     Then I should see "Expires" on the page
+
+  Scenario: Author previews a draft before posting
+    Given I register with email "previewer@example.com" and password "Password123!"
+    When I preview a post titled "Need advice" with body "Does anyone recommend a fall elective?"
+    Then I should see "Draft Preview"
+    And I should see "Does anyone recommend a fall elective?" on the page

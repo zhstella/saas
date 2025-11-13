@@ -19,7 +19,7 @@ class Answer < ApplicationRecord
   def clear_post_acceptance
     return unless post.accepted_answer_id == id
 
-    post.update_columns(accepted_answer_id: nil, locked_at: nil)
+    post.update_columns(accepted_answer_id: nil, locked_at: nil, status: Post::STATUSES[:open])
   end
 
   def post_must_be_open

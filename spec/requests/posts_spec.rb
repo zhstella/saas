@@ -14,7 +14,7 @@ RSpec.describe "Posts", type: :request do
     it "filters posts when a search term is present" do
       sign_in create(:user)
 
-      get posts_path, params: { search: 'visa' }
+      get posts_path, params: { filters: { q: 'visa' } }
 
       expect(response.body).to include('Visa renewal tips')
       expect(response.body).not_to include('Dorm cooking')
@@ -23,7 +23,7 @@ RSpec.describe "Posts", type: :request do
     it "shows an alert when the search term is blank" do
       sign_in create(:user)
 
-      get posts_path, params: { search: '' }
+      get posts_path, params: { filters: { q: '' } }
 
       expect(response.body).to include('Please enter text to search.')
       expect(response.body).to include('Post List')
@@ -32,7 +32,20 @@ RSpec.describe "Posts", type: :request do
 
   describe "POST /posts" do
     let(:user) { create(:user) }
-    let(:valid_params) { { post: { title: 'Need visa advice', body: 'Looking for guidance on F-1 renewal.' } } }
+    let(:topic) { create(:topic) }
+    let(:tag) { create(:tag) }
+    let(:valid_params) do
+      {
+        post: {
+          title: 'Need visa advice',
+          body: 'Looking for guidance on F-1 renewal.',
+          topic_id: topic.id,
+          tag_ids: [ tag.id ],
+          school: Post::SCHOOLS.first,
+          course_code: 'COMS W4152'
+        }
+      }
+    end
 
     context "when signed in" do
       it "creates a new post" do
@@ -58,8 +71,11 @@ RSpec.describe "Posts", type: :request do
       it "does not create post with missing title" do
         sign_in user
 
+        invalid_params = valid_params.deep_dup
+        invalid_params[:post][:title] = ""
+
         expect {
-          post posts_path, params: { post: { title: "", body: "Body content" } }
+          post posts_path, params: invalid_params
         }.not_to change(Post, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
@@ -68,8 +84,11 @@ RSpec.describe "Posts", type: :request do
       it "does not create post with missing body" do
         sign_in user
 
+        invalid_params = valid_params.deep_dup
+        invalid_params[:post][:body] = ""
+
         expect {
-          post posts_path, params: { post: { title: "Title", body: "" } }
+          post posts_path, params: invalid_params
         }.not_to change(Post, :count)
 
         expect(response).to have_http_status(:unprocessable_content)

@@ -17,6 +17,25 @@
     <p class="identity-badge">Expires <%= time_ago_in_words(@post.expires_at) %> from now</p>
   <% end %>
 
+  <div class="post-card-meta">
+    <span class="meta-chip">Topic: <%= @post.topic&.name %></span>
+    <span class="meta-chip">Status: <%= @post.status.humanize %></span>
+    <% if @post.school.present? %>
+      <span class="meta-chip">School: <%= @post.school %></span>
+    <% end %>
+    <% if @post.course_code.present? %>
+      <span class="meta-chip">Course: <%= @post.course_code %></span>
+    <% end %>
+  </div>
+
+  <% if @post.tags.any? %>
+    <div class="post-card-tags">
+      <% @post.tags.each do |tag| %>
+        <span class="tag-chip readonly"><%= tag.name %></span>
+      <% end %>
+    </div>
+  <% end %>
+
   <% if @post.locked? %>
     <p class="identity-badge">Thread locked after accepting an answer.</p>
     <% if @post.user == current_user %>

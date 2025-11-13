@@ -1,40 +1,98 @@
 <div class="main-content-container" id="index-page-container">
-
-  <%# --- 1. 操作栏 --- %>
   <div class="action-bar-container">
-    
-    <%= form_with(url: posts_path, method: :get, class: "action-bar-search") do |form| %>
-      <%= form.text_field :search, placeholder: "Search Posts" %>
-      <button type="submit" class="search-button">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-        </svg>
-      </button>
+    <%= form_with(url: posts_path, method: :get, scope: :filters, class: "filter-form", local: true) do |form| %>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <%= form.label :q, "Search", class: 'form-label' %>
+          <%= form.text_field :q, value: @filter_form[:q], placeholder: "Search posts", class: 'form-input' %>
+        </div>
+        <div class="filter-field">
+          <%= form.label :topic_id, "Topic", class: 'form-label' %>
+          <%= form.select :topic_id,
+                options_from_collection_for_select(@topics, :id, :name, @filter_form[:topic_id]),
+                { include_blank: 'All topics' },
+                class: 'form-input' %>
+        </div>
+        <div class="filter-field">
+          <%= form.label :status, "Status", class: 'form-label' %>
+          <%= form.select :status,
+                options_for_select(Post::STATUSES.map { |key, value| [key.to_s.humanize, value] }, @filter_form[:status]),
+                { include_blank: 'All statuses' },
+                class: 'form-input' %>
+        </div>
+        <div class="filter-field">
+          <%= form.label :school, "School", class: 'form-label' %>
+          <%= form.select :school,
+                options_for_select(Post::SCHOOLS, @filter_form[:school]),
+                { include_blank: 'All schools' },
+                class: 'form-input' %>
+        </div>
+        <div class="filter-field">
+          <%= form.label :course_code, "Course", class: 'form-label' %>
+          <%= form.text_field :course_code, value: @filter_form[:course_code], placeholder: "e.g., COMS W4152", class: 'form-input' %>
+        </div>
+        <div class="filter-field">
+          <%= form.label :timeframe, "Timeframe", class: 'form-label' %>
+          <%= form.select :timeframe,
+                options_for_select([['Any time', ''], ['Last 24 hours', '24h'], ['Past 7 days', '7d'], ['Past 30 days', '30d']], @filter_form[:timeframe]),
+                {},
+                class: 'form-input' %>
+        </div>
+        <div class="filter-field full-width">
+          <%= form.label :tag_ids, "Tags", class: 'form-label' %>
+          <%= select_tag 'filters[tag_ids][]',
+                options_from_collection_for_select(@tags, :id, :name, Array(@filter_form[:tag_ids])),
+                multiple: true,
+                class: 'form-input tag-multiselect' %>
+          <small class="form-hint">Hold Command/Ctrl to select multiple tags.</small>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="search-button">Apply Filters</button>
+        <%= link_to 'Reset', posts_path, class: 'form-cancel-button' %>
+      </div>
     <% end %>
-    
+
     <%= link_to "Submit a Post", new_post_path, class: "btn-submit-question" %>
-    
   </div>
-  
-  <%# --- 2. "Post List" 标题 --- %>
+
   <h2 class="post-list-title">Post List</h2>
-  
+
   <div id="posts">
     <% @posts.each do |post| %>
       <%= link_to post_path(post), class: "post-card" do %>
         <div class="post-card-content">
-          <h3 class="post-card-title"><%= post.title %></h3>
-          
+          <div class="post-card-header">
+            <h3 class="post-card-title"><%= post.title %></h3>
+            <span class="status-pill"><%= post.status.humanize %></span>
+          </div>
           <div class="post-card-meta">
+            <span class="meta-topic"><%= post.topic&.name %></span>
             <span class="meta-author">By: <%= display_author(post.user, context: post) %></span>
             <span class="meta-time"><%= time_ago_in_words(post.created_at) %> ago</span>
             <% if post.expires_at.present? %>
               <span class="meta-expiry">Expires <%= time_ago_in_words(post.expires_at) %> from now</span>
             <% end %>
           </div>
+          <% if post.school.present? || post.course_code.present? %>
+            <div class="post-card-meta">
+              <% if post.school.present? %>
+                <span class="meta-chip">School: <%= post.school %></span>
+              <% end %>
+              <% if post.course_code.present? %>
+                <span class="meta-chip">Course: <%= post.course_code %></span>
+              <% end %>
+            </div>
+          <% end %>
+          <% if post.tags.any? %>
+            <div class="post-card-tags">
+              <% post.tags.each do |tag| %>
+                <span class="tag-chip readonly"><%= tag.name %></span>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     <% end %>
   </div>
-  
 </div>

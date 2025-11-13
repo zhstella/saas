@@ -45,19 +45,37 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["user_id"], name: "index_likes_on_user_id"
   end
 
+  create_table "post_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.integer "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id", "tag_id"], name: "index_post_tags_on_post_id_and_tag_id", unique: true
+    t.index ["post_id"], name: "index_post_tags_on_post_id"
+    t.index ["tag_id"], name: "index_post_tags_on_tag_id"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.integer "accepted_answer_id"
     t.text "body"
+    t.string "course_code"
     t.datetime "created_at", null: false
     t.datetime "expires_at"
     t.datetime "locked_at"
+    t.string "school"
     t.boolean "show_real_identity", default: false, null: false
+    t.string "status", default: "open", null: false
     t.string "title"
+    t.integer "topic_id", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["accepted_answer_id"], name: "index_posts_on_accepted_answer_id"
+    t.index ["course_code"], name: "index_posts_on_course_code"
     t.index ["expires_at"], name: "index_posts_on_expires_at"
     t.index ["locked_at"], name: "index_posts_on_locked_at"
+    t.index ["school"], name: "index_posts_on_school"
+    t.index ["status"], name: "index_posts_on_status"
+    t.index ["topic_id"], name: "index_posts_on_topic_id"
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
@@ -71,6 +89,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
   end
 
+  create_table "tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_tags_on_slug", unique: true
+  end
+
   create_table "thread_identities", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
@@ -80,6 +106,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.index ["post_id"], name: "index_thread_identities_on_post_id"
     t.index ["user_id", "post_id"], name: "index_thread_identities_on_user_id_and_post_id", unique: true
     t.index ["user_id"], name: "index_thread_identities_on_user_id"
+  end
+
+  create_table "topics", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_topics_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -102,7 +135,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
   add_foreign_key "audit_logs", "users", column: "performed_by_id"
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
+  add_foreign_key "post_tags", "posts"
+  add_foreign_key "post_tags", "tags"
   add_foreign_key "posts", "answers", column: "accepted_answer_id"
+  add_foreign_key "posts", "topics"
   add_foreign_key "posts", "users"
   add_foreign_key "thread_identities", "posts"
   add_foreign_key "thread_identities", "users"

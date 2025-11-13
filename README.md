@@ -22,6 +22,7 @@
 2. Install project gems: `bundle install`
 3. Prepare the database: `bin/rails db:prepare`
    - Alternatively run `bin/setup` once; it installs gems, prepares the DB, and launches the dev server.
+4. Seed the default topics and tags so the composer/search filters have data: `bin/rails db:seed`
 
 ### Running the app
 1. Start the server: `rails server`
@@ -35,6 +36,8 @@
    ```
    Then open the editor of your choice. Pick one of these commands (remember to include `--wait` for editors that spawn a new window):
    ```bash
+   bin/rails credentials:edit
+   
    # VS Code
    VISUAL="code --wait" bin/rails credentials:edit
 
@@ -73,6 +76,8 @@
 - Mark posts as ephemeral by selecting a 7/14/30-day expiry window. Expired threads drop off the feed automatically and cannot be opened once the timer elapses.
 - Schedule the daily `ExpirePostsJob` (Heroku Scheduler, cron, etc.) to purge threads whose `expires_at` timestamps have passed so the feed stays fresh. Manually trigger it anytime with `rails runner 'ExpirePostsJob.perform_later'`.
 - Structure Q&A so every reply is an answer, question authors can accept the best response, and the thread locks (with a reopen button) once solved.
+- Author posts with the taxonomy-driven composer: pick an official topic, add 1-5 curated tags, capture school/course context, and open an inline draft preview before publishing.
+- Filter the feed with full-text search plus topic, tag, school, course, timeframe, and status facets powered by the new `PostSearchQuery` service.
 
 ## Test Suites
 ```bash
@@ -84,24 +89,25 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 74 examples / 0 failures (line coverage 84.96%, branch coverage 76.32%).
-- `spec/models/post_spec.rb`: validations, search helper, and thread-identity callback.
+- 83 examples / 0 failures (line coverage 87.97%, branch coverage 77.66%).
+- `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, and thread-identity callback.
 - `spec/models/answer_spec.rb`: validations, per-thread identity creation, and acceptance cleanup.
 - `spec/models/like_spec.rb`: uniqueness constraint and helper methods.
 - `spec/models/user_spec.rb`: anonymous handle generation and associations.
 - `spec/models/thread_identity_spec.rb`, `spec/models/audit_log_spec.rb`: new anonymity infrastructure.
-- `spec/requests/posts_spec.rb`: create/delete flows, guest redirects, thread identities, reveal audits.
+- `spec/requests/posts_spec.rb`: create/delete flows, guest redirects, thread identities, reveal audits, and taxonomy validations.
 - `spec/requests/answers_spec.rb`: answer CRUD, validation failures, thread identities, acceptance, and reveal audits.
 - `spec/requests/likes_spec.rb`: like/unlike actions with authentication checks.
 - `spec/helpers/application_helper_spec.rb`: display_author pseudonym helper.
+- `spec/queries/post_search_query_spec.rb`: filter coverage for the topic/tag/timeframe search service.
 
-**Cucumber scenarios**
-- Latest run: 18 scenarios / 125 steps passing in ~0.5s via `bundle exec cucumber`.
-- Features exercised: answering, browsing/searching, creating posts (including expiring threads), liking/unliking, identity reveals, thread-specific pseudonyms, and locking/unlocking accepted answers to keep threads tidy.
-- Coverage snapshot: line 84.96% (226/266), branch 76.32% (58/76). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
+- **Cucumber scenarios**
+- Latest run: 19 scenarios / 131 steps passing in ~0.5s via `bundle exec cucumber`.
+- Features exercised: answering, browsing/searching, creating posts (including expiring threads and previewing drafts), liking/unliking, identity reveals, thread-specific pseudonyms, and locking/unlocking accepted answers to keep threads tidy.
+- Coverage snapshot: line 78.84% (298/378), branch 56.38% (53/94). Run with `COVERAGE=true bundle exec cucumber` plus `open coverage/index.html` to inspect details.
 - Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true` in `cucumber.yml`). Set `CUCUMBER_PUBLISH_QUIET=true` locally to silence the banner.
-- `features/posts/browse_posts.feature`: authenticated browsing, empty-search alert, and guest redirect to the SSO screen.
-- `features/posts/create_post.feature`: signup + creation flow plus validation failures and guest access checks.
+- `features/posts/browse_posts.feature`: authenticated browsing, the advanced filter bar (search + facets), empty-search alerts, and guest redirect to the SSO screen.
+- `features/posts/create_post.feature`: signup + creation flow, validation failures, expiring threads, and draft preview UX.
 - `features/answers/add_answer.feature`: answering success + validation errors.
 - `features/posts/like_post.feature`: like/unlike toggle with count updates.
 - `features/posts/reveal_identity.feature`: verifies post/answer reveal buttons surface real identities and audit logs.
@@ -130,6 +136,7 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 ## Additional Materials
 - Iteration artifacts (such as proposal.txt) are stored in `/docs` as the project evolves.
 - A daily `ExpirePostsJob` can be scheduled (e.g., via Heroku Scheduler or cron) to purge posts whose `expires_at` timestamp has passed.
+- Seeded tag allowlist (via `TaxonomySeeder`): `academics`, `courses/coms`, `advising`, `housing`, `visas-immigration`, `financial-aid`, `mental-health`, `student-life`, `career`, `marketplace`, `accessibility-ods`, `public-safety`, `tech-support`, `international`, `resources`.
 
 ## Addressing Iteration 1 Feedback
 - Added Cucumber coverage for empty-search alerts, validation errors, and guest redirects so the user stories graders requested are now executable specs (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/answers/add_answer.feature`).

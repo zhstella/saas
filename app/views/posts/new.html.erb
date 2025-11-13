@@ -1,7 +1,10 @@
 <div class="main-content-container">
 
   <h2 class="page-title">New Post</h2>
-  
+  <% if @show_preview %>
+    <%= render 'preview', post: @post %>
+  <% end %>
+
   <%= render "form", post: @post %>
   
 </div>

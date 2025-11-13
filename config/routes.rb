@@ -24,6 +24,9 @@ Rails.application.routes.draw do
       patch :reveal_identity
       patch :unlock
     end
+    collection do
+      post :preview
+    end
 
     resources :answers, only: [:create, :destroy] do
       member do
