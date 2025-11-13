@@ -371,4 +371,34 @@ RSpec.describe "Posts", type: :request do
       expect(response.body).to include('Unable to reveal identity.')
     end
   end
+
+  describe "PATCH /posts/:id/unlock" do
+    let!(:post_record) { create(:post) }
+
+    it "reopens the thread when locked with an accepted answer" do
+      answer = create(:answer, post: post_record)
+      post_record.update!(locked_at: Time.current, accepted_answer: answer, status: Post::STATUSES[:solved])
+      sign_in post_record.user
+
+      patch unlock_post_path(post_record)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('Thread reopened.')
+      post_record.reload
+      expect(post_record.locked?).to be(false)
+      expect(post_record.accepted_answer).to be_nil
+      expect(post_record.status).to eq(Post::STATUSES[:open])
+    end
+
+    it "alerts the user when unlock criteria are not met" do
+      sign_in post_record.user
+
+      patch unlock_post_path(post_record)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('No accepted answer to unlock.')
+    end
+  end
 end
