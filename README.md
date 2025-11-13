@@ -231,10 +231,13 @@ CU_Blueboard/
 │   │   ├── moderation/answers_controller.rb      # Answer redaction actions
 │   │   └── users/omniauth_callbacks_controller.rb # Google SSO callback handler
 │   ├── jobs/
-│   │   └── expire_posts_job.rb                   # Background cleanup for expired threads
+│   │   ├── expire_posts_job.rb                   # Background cleanup for expired threads
+│   │   └── screen_post_content_job.rb            # OpenAI content screening job
 │   ├── queries/
 │   │   └── post_search_query.rb                  # Multi-filter feed search service
 │   ├── services/
+│   │   ├── content_safety/
+│   │   │   └── openai_client.rb                  # OpenAI Moderation API client
 │   │   ├── taxonomy_seeder.rb                    # Seeds topics & tags (TaxonomySeeder)
 │   │   ├── duplicate_post_finder.rb              # Composer duplicate detection
 │   │   └── redaction_service.rb                  # Post/Answer redaction service
@@ -261,8 +264,10 @@ CU_Blueboard/
 ├── config/
 │   ├── routes.rb                       # Devise keyword routes + nested resources
 │   ├── environments/{development,test}.rb # Notes integration + Cucumber annotations
-│   ├── initializers/devise.rb          # Devise configuration
-│   └── initializers/simple_form.rb     # SimpleForm theme overrides
+│   ├── initializers/
+│   │   ├── devise.rb                    # Devise configuration
+│   │   ├── moderation.rb                # Moderator whitelist ENV configuration
+│   │   └── simple_form.rb               # SimpleForm theme overrides
 ├── db/
 │   ├── migrate/                        # Devise + posts/answers/likes/topics/tags tables
 │   └── schema.rb                       # Current SQLite schema
@@ -287,8 +292,14 @@ CU_Blueboard/
 │   ├── models/{post,answer,like,user,answer_comment,post_revision,answer_revision}_spec.rb        # Model specs
 │   ├── requests/{posts,answers,likes,answer_comments,omniauth_callbacks}_spec.rb                  # Request specs
 │   ├── requests/moderation/{posts,answers}_spec.rb                                              # Moderation request specs
-│   ├── services/duplicate_post_finder_spec.rb                                                    # Composer duplicate detection
-│   ├── services/redaction_service_spec.rb                                                        # Redaction service specs
+│   ├── controllers/moderation/posts_controller_spec.rb                                          # Moderation controller specs
+│   ├── jobs/
+│   │   ├── expire_posts_job_spec.rb                                                              # Expiration job specs
+│   │   └── screen_post_content_job_spec.rb                                                       # OpenAI screening job specs
+│   ├── services/
+│   │   ├── content_safety/openai_client_spec.rb                                                  # OpenAI API client specs
+│   │   ├── duplicate_post_finder_spec.rb                                                         # Composer duplicate detection
+│   │   └── redaction_service_spec.rb                                                             # Redaction service specs
 │   ├── helpers/application_helper_spec.rb                                                        # Helper method specs
 │   ├── queries/post_search_query_spec.rb                                                         # Search service specs
 │   └── rails_helper.rb                                                                           # RSpec + Devise/Test helpers config
