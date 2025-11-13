@@ -76,6 +76,9 @@
 - Author posts with the taxonomy-driven composer: pick an official topic, add 1-5 curated tags, capture school/course context, and open an inline draft preview before publishing.
 - Filter the feed with full-text search plus topic, tag, school, course, timeframe, and status facets powered by the new `PostSearchQuery` service.
 - Pivot to the “My Threads” feed from the header to see only the posts you authored, complete with empty-state messaging and support for the full filter toolbox.
+- Collaborate inside threads with answer-level comments, including ownership-protected create/delete actions and comment logging for pseudonym continuity.
+- Catch duplicates before publishing via the composer’s “Possible similar threads” panel, powered by the new `DuplicatePostFinder` service the preview and edit forms call.
+- Edit posts and answers after publishing while preserving the full revision history so classmates and moderators can trace changes; authors can see their timelines inline on the thread page.
 
 
 ## Test Suites
@@ -88,21 +91,25 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 92 examples / 0 failures (line coverage 95.76%, branch coverage 84.0%).
+- 106 examples / 0 failures (line coverage 96.03%, branch coverage 83.87%).
 - `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, expiration logic, and thread-identity callback.
 - `spec/models/answer_spec.rb`: body validations, per-thread identities, reveal logging, and acceptance cleanup.
+- `spec/models/answer_comment_spec.rb`: comment validation + thread delegation to preserve pseudonyms.
+- `spec/models/post_revision_spec.rb` / `spec/models/answer_revision_spec.rb`: ensure revision history entries stay valid.
 - `spec/models/like_spec.rb`: uniqueness constraint plus helper methods for liked?/find_like_by.
 - `spec/models/user_spec.rb`: anonymous handle helper and OmniAuth linkage for happy/duplicate/new flows.
 - `spec/requests/posts_spec.rb`: global feed filters, create/destroy, reveal identity, expiring threads, and the `my_threads` route.
-- `spec/requests/answers_spec.rb`: CRUD, validation, authorization, identity reveals, and accept/reopen flows.
+- `spec/requests/answers_spec.rb`: CRUD, validation, authorization, identity reveals, edit/revision flows, and accept/reopen flows.
+- `spec/requests/answer_comments_spec.rb`: comment create/delete permissions and flash messaging.
 - `spec/requests/likes_spec.rb`: like/unlike endpoints with authentication guards.
 - `spec/requests/omniauth_callbacks_spec.rb`: Google SSO domain enforcement and account linking.
 - `spec/helpers/application_helper_spec.rb`: `display_author` pseudonym helper.
 - `spec/queries/post_search_query_spec.rb`: text/topic/status/tag/school/course/timeframe/author filters.
+- `spec/services/duplicate_post_finder_spec.rb`: verifies the composer’s duplicate-detector logic.
 
 **Cucumber scenarios**
-- Latest run: 26 scenarios / 182 steps passing in ~0.9s via `bundle exec cucumber`.
-- Coverage snapshot: line 95.76% (361/377), branch 84.0% (84/100) once merged with the RSpec suite. Run `bundle exec cucumber` followed by `open coverage/index.html` to inspect details.
+- Latest run: 29 scenarios / 203 steps passing in ~1.1s via `bundle exec cucumber`.
+- Coverage snapshot: line 96.03% (459/478), branch 83.87% (104/124) once merged with the RSpec suite. Run `bundle exec cucumber` followed by `open coverage/index.html` to inspect details.
 - Reports publish to https://reports.cucumber.io by default (`CUCUMBER_PUBLISH_ENABLED=true`). Set `CUCUMBER_PUBLISH_QUIET=true` or pass `--publish-quiet` locally to silence the banner.
 - `features/posts/browse_posts.feature`: authenticated browsing, advanced filters, My Threads navigation, blank-search alerts, and guest redirect to the SSO screen.
 - `features/posts/create_post.feature`: signup + creation flow, validation failures, expiring threads, and draft preview UX.
@@ -113,6 +120,7 @@ bundle exec cucumber
 - `features/posts/accept_answer.feature`: author accepts an answer, thread locks, and reopening restores the composer.
 - `features/auth/google_sign_in.feature`: OmniAuth success path for campus emails and rejection for non-campus addresses.
 - `features/posts/expire_posts_job.feature`: executes `ExpirePostsJob` to remove threads once their expiry window elapses.
+- `features/posts/edit_post.feature`: author edits a thread, saves changes, and sees the revision history.
 
 ### Test Coverage
 
@@ -149,31 +157,36 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 CU_Blueboard/
 ├── app/
 │   ├── controllers/
-│   │   ├── application_controller.rb        # Global Devise auth hook
-│   │   ├── posts_controller.rb              # Post CRUD + search + My Threads
-│   │   ├── answers_controller.rb            # Answer create/destroy/accept
-│   │   ├── likes_controller.rb              # Like toggle endpoints
+│   │   ├── application_controller.rb             # Global Devise auth hook
+│   │   ├── posts_controller.rb                   # Post CRUD + My Threads + revisions
+│   │   ├── answers_controller.rb                 # Answer CRUD + revisions + accept
+│   │   ├── answer_comments_controller.rb         # Answer comment create/destroy
+│   │   ├── likes_controller.rb                   # Like toggle endpoints
 │   │   └── users/omniauth_callbacks_controller.rb # Google SSO callback handler
 │   ├── jobs/
-│   │   └── expire_posts_job.rb              # Background cleanup for expired threads
+│   │   └── expire_posts_job.rb                   # Background cleanup for expired threads
 │   ├── queries/
-│   │   └── post_search_query.rb             # Multi-filter feed search service
+│   │   └── post_search_query.rb                  # Multi-filter feed search service
 │   ├── services/
-│   │   └── taxonomy_seeder.rb               # Seeds topics & tags (TaxonomySeeder)
+│   │   ├── taxonomy_seeder.rb                    # Seeds topics & tags (TaxonomySeeder)
+│   │   └── duplicate_post_finder.rb              # Composer duplicate detection
 │   ├── models/
-│   │   ├── post.rb                          # Post validations + taxonomy + status helpers
-│   │   ├── answer.rb                        # Answer validations + reveal support
-│   │   ├── like.rb                          # Like uniqueness + associations
-│   │   ├── thread_identity.rb               # Thread-specific pseudonyms
-│   │   ├── audit_log.rb                     # Records identity reveals/unlocks
-│   │   ├── tag.rb / topic.rb / post_tag.rb  # Taxonomy models
-│   │   └── user.rb                          # Devise user with anonymous handle + OmniAuth
-│   ├── views/posts/                         # Index/show/new templates & shared form partial
-│   ├── views/layouts/application.html.erb   # Main layout (nav, flashes)
-│   ├── helpers/application_helper.rb        # `display_author` pseudonym helper
+│   │   ├── post.rb                               # Post validations + taxonomy + status helpers
+│   │   ├── post_revision.rb                      # Stores post edit history
+│   │   ├── answer.rb                             # Answer validations + reveal support
+│   │   ├── answer_revision.rb                    # Stores answer edit history
+│   │   ├── answer_comment.rb                     # Inline comments on answers
+│   │   ├── like.rb / thread_identity.rb / audit_log.rb
+│   │   ├── tag.rb / topic.rb / post_tag.rb       # Taxonomy models
+│   │   └── user.rb                               # Devise user with anonymous handle + OmniAuth
+│   ├── views/posts/                              # Index/show/new/edit templates & shared partials
+│   │   └── _revision_history.html.erb            # Shared revision list
+│   ├── views/answers/edit.html.erb               # Answer edit form
+│   ├── views/layouts/application.html.erb        # Main layout (nav, flashes)
+│   ├── helpers/application_helper.rb             # `display_author` pseudonym helper
 │   └── javascript/
-│       ├── controllers/post_show_controller.js # Toggles answer form
-│       └── controllers/tag_picker_controller.js # Enforces tag selection limits
+│       ├── controllers/post_show_controller.js   # Toggles answer form
+│       └── controllers/tag_picker_controller.js  # Enforces tag selection limits
 ├── config/
 │   ├── routes.rb                       # Devise keyword routes + nested resources
 │   ├── environments/{development,test}.rb # Notes integration + Cucumber annotations
@@ -194,16 +207,18 @@ CU_Blueboard/
 │   ├── posts/like_post.feature              # Like/unlike toggle flow
 │   ├── posts/reveal_identity.feature        # Identity reveal flows
 │   ├── posts/thread_pseudonym.feature       # Thread-specific pseudonym checks
+│   ├── posts/edit_post.feature              # Post editing + revision history
 │   ├── step_definitions/post_steps.rb       # Shared step implementations
 │   └── support/env.rb                       # Cucumber+DatabaseCleaner/OmniAuth setup
 ├── lib/tasks/cucumber.rake             # Rake tasks for Cucumber profiles
 ├── spec/
-│   ├── factories/{users,posts,answers,likes}.rb # FactoryBot fixtures
-│   ├── models/{post,answer,like,user}_spec.rb   # Model specs
-│   ├── requests/{posts,answers,likes,omniauth_callbacks}_spec.rb # Auth specs
-│   ├── helpers/application_helper_spec.rb        # Helper method specs
-│   ├── queries/post_search_query_spec.rb         # Search service specs
-│   └── rails_helper.rb                           # RSpec + Devise/Test helpers config
+│   ├── factories/{users,posts,answers,likes,answer_comments,post_revisions,answer_revisions}.rb # FactoryBot fixtures
+│   ├── models/{post,answer,like,user,answer_comment,post_revision,answer_revision}_spec.rb        # Model specs
+│   ├── requests/{posts,answers,likes,answer_comments,omniauth_callbacks}_spec.rb                  # Request specs
+│   ├── services/duplicate_post_finder_spec.rb                                                    # Composer duplicate detection
+│   ├── helpers/application_helper_spec.rb                                                        # Helper method specs
+│   ├── queries/post_search_query_spec.rb                                                         # Search service specs
+│   └── rails_helper.rb                                                                           # RSpec + Devise/Test helpers config
 ├── simplecov_setup.rb                 # SimpleCov configuration
 ├── coverage/index.html                # Coverage report (generated by running tests, not in git)
 ├── test/application_system_test_case.rb # Stub system test base class (no tests)
