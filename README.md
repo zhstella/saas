@@ -24,12 +24,8 @@
    gem install bundler
    bundle install
    ```
-3. Prepare the database:
-   ```bash
-   bin/rails db:prepare
-   bin/rails db:seed   # seeds topics/tags for the composer/search filters
-   ```
-4. Configure Google OAuth the first time you work on this repo:
+
+3. Configure Google OAuth the first time you work on this repo:
    1. Create a Web client in Google Cloud Console and add both `http://localhost:3000/users/auth/google_oauth2/callback` and `http://127.0.0.1:3000/users/auth/google_oauth2/callback` under *Authorized redirect URIs*. (Leave “Authorized JavaScript origins” empty.)
    2. Remove the old encrypted credentials and add the new secrets:
       ```bash
@@ -44,6 +40,11 @@
         client_secret: YOUR_CLIENT_SECRET
       ```
       Save/exit and share the regenerated `config/master.key` securely with your team. Confirm the entry with `bin/rails credentials:show`.
+4. Prepare the database:
+   ```bash
+   bin/rails db:prepare
+   bin/rails db:seed   # seeds topics/tags for the composer/search filters
+   ```
 5. Run migrations (after installing the OmniAuth gems via `bundle install`, which our Gemfile already lists):
    ```bash
    bin/rails db:migrate
