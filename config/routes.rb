@@ -29,11 +29,13 @@ Rails.application.routes.draw do
       get :my_threads
     end
 
-    resources :answers, only: [:create, :destroy] do
+    resources :answers, only: [:create, :destroy, :edit, :update] do
       member do
         patch :reveal_identity
         patch :accept
       end
+
+      resources :comments, only: [:create, :destroy], controller: 'answer_comments'
     end
     resources :likes, only: [:create, :destroy]
   end

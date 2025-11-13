@@ -3,12 +3,20 @@ class Answer < ApplicationRecord
   belongs_to :user
 
   has_many :audit_logs, as: :auditable, dependent: :destroy
+  has_many :answer_comments, dependent: :destroy
+  has_many :answer_revisions, dependent: :destroy
 
   validates :body, presence: true
   validate :post_must_be_open, on: :create
 
   after_create :ensure_thread_identity
   before_destroy :clear_post_acceptance
+
+  def record_revision!(editor:, previous_body:)
+    return if previous_body == body
+
+    answer_revisions.create!(user: editor, body: previous_body)
+  end
 
   private
 

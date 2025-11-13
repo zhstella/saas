@@ -1,8 +1,8 @@
 class PostsController < ApplicationController
-  before_action :set_post, only: [ :show, :destroy, :reveal_identity, :unlock ]
+  before_action :set_post, only: [ :show, :edit, :update, :destroy, :reveal_identity, :unlock ]
   before_action :ensure_active_post, only: [ :show, :reveal_identity ]
-  before_action :authorize_owner!, only: [ :unlock ]
-  before_action :load_taxonomies, only: [ :new, :create, :preview, :index, :my_threads ]
+  before_action :authorize_owner!, only: [ :edit, :update, :destroy, :unlock ]
+  before_action :load_taxonomies, only: [ :new, :create, :preview, :index, :my_threads, :edit, :update ]
 
   # GET /posts
   def index
@@ -22,17 +22,19 @@ class PostsController < ApplicationController
   # GET /posts/1
   def show
     @answer = Answer.new
-    @answers = @post.answers.includes(:user).order(created_at: :asc)
+    @answers = @post.answers.includes(:user, { answer_comments: :user }, { answer_revisions: :user }).order(created_at: :asc)
   end
 
   # GET /posts/new
   def new
     @post = Post.new
+    assign_duplicate_posts(@post)
   end
 
   def preview
     @post = current_user.posts.new(post_params)
     @show_preview = true
+    assign_duplicate_posts(@post)
     render :new, status: :ok
   end
 
@@ -43,7 +45,24 @@ class PostsController < ApplicationController
     if @post.save
       redirect_to posts_path, notice: "Post was successfully created!"
     else
+      assign_duplicate_posts(@post)
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  def edit
+    assign_duplicate_posts(@post)
+  end
+
+  def update
+    previous_state = @post.slice(:title, :body)
+
+    if @post.update(post_params)
+      @post.record_revision!(editor: current_user, previous_title: previous_state[:title], previous_body: previous_state[:body])
+      redirect_to @post, notice: 'Post updated.'
+    else
+      assign_duplicate_posts(@post)
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -133,6 +152,11 @@ class PostsController < ApplicationController
   def load_taxonomies
     @topics = Topic.alphabetical
     @tags = Tag.alphabetical
+  end
+
+  def assign_duplicate_posts(post)
+    finder = DuplicatePostFinder.new(title: post.title, body: post.body, exclude_id: post.id)
+    @duplicate_posts = finder.call
   end
 
   def blank_search_requested?

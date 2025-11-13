@@ -1,10 +1,26 @@
 <%= form_with(model: post) do |form| %>
+  <% submit_label = post.persisted? ? 'Save Changes' : 'Submit Post' %>
 
   <% if post.errors.any? %>
     <div class="form-errors">
       <% post.errors.full_messages.each do |message| %>
         <p class="error-message"><%= message %></p>
       <% end %>
+    </div>
+  <% end %>
+
+  <% if defined?(@duplicate_posts) && @duplicate_posts.present? %>
+    <div class="duplicate-warning">
+      <h3>Possible similar threads</h3>
+      <ul>
+        <% @duplicate_posts.each do |duplicate| %>
+          <li>
+            <%= link_to duplicate.title, post_path(duplicate), class: 'duplicate-link' %>
+            <span class="meta-time">&middot; <%= time_ago_in_words(duplicate.created_at) %> ago</span>
+          </li>
+        <% end %>
+      </ul>
+      <p class="form-hint">If one of these answers your question, consider adding to that thread instead of creating a duplicate.</p>
     </div>
   <% end %>
 
@@ -79,13 +95,15 @@
   </div>
 
   <div class="form-actions">
-    <%= button_tag "Preview Draft",
-          type: 'submit',
-          class: 'form-secondary-button',
-          formaction: preview_posts_path,
-          formmethod: :post,
-          formnovalidate: true %>
-    <%= form.submit "Submit Post", class: "form-submit-button" %>
+    <% if post.new_record? %>
+      <%= button_tag "Preview Draft",
+            type: 'submit',
+            class: 'form-secondary-button',
+            formaction: preview_posts_path,
+            formmethod: :post,
+            formnovalidate: true %>
+    <% end %>
+    <%= form.submit submit_label, class: "form-submit-button" %>
     <%= link_to "Cancel", posts_path, 
             class: "form-cancel-button",
             onclick: "return confirm('Are you sure you want to cancel? Any unsaved changes will be lost.');" %>

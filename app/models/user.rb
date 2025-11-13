@@ -13,6 +13,9 @@ class User < ApplicationRecord
   has_many :thread_identities, dependent: :destroy
   has_many :audit_logs, dependent: :destroy
   has_many :performed_audit_logs, class_name: 'AuditLog', foreign_key: :performed_by_id, dependent: :destroy
+  has_many :answer_comments, dependent: :destroy
+  has_many :post_revisions, dependent: :destroy
+  has_many :answer_revisions, dependent: :destroy
 
   def anonymous_handle
     base = id ? id.to_s(36).upcase.rjust(4, '0') : SecureRandom.alphanumeric(4).upcase

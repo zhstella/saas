@@ -1,7 +1,7 @@
 class AnswersController < ApplicationController
   before_action :set_post
-  before_action :set_answer, only: [ :destroy, :reveal_identity, :accept ]
-  before_action :authorize_answer_owner!, only: [ :destroy, :reveal_identity ]
+  before_action :set_answer, only: [ :destroy, :reveal_identity, :accept, :edit, :update ]
+  before_action :authorize_answer_owner!, only: [ :destroy, :reveal_identity, :edit, :update ]
   before_action :authorize_post_owner!, only: [ :accept ]
 
   def create
@@ -24,6 +24,20 @@ class AnswersController < ApplicationController
   def destroy
     @answer.destroy
     redirect_to @post, notice: 'Answer deleted.'
+  end
+
+  def edit
+  end
+
+  def update
+    previous_body = @answer.body
+
+    if @answer.update(answer_params)
+      @answer.record_revision!(editor: current_user, previous_body: previous_body)
+      redirect_to @post, notice: 'Answer updated.'
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   def reveal_identity

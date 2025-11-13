@@ -8,6 +8,7 @@ class Post < ApplicationRecord
   has_many :audit_logs, as: :auditable, dependent: :destroy
   has_many :post_tags, dependent: :destroy
   has_many :tags, through: :post_tags
+  has_many :post_revisions, dependent: :destroy
   belongs_to :accepted_answer, class_name: 'Answer', optional: true
 
   after_create :ensure_thread_identity
@@ -67,6 +68,12 @@ class Post < ApplicationRecord
   # --- 这是 SQLite 的搜索方法 (替代 pg_search) ---
   def self.search(query)
     PostSearchQuery.new({ q: query }).call
+  end
+
+  def record_revision!(editor:, previous_title:, previous_body:)
+    return if previous_title == title && previous_body == body
+
+    post_revisions.create!(user: editor, title: previous_title, body: previous_body)
   end
 
   private

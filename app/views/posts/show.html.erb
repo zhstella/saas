@@ -89,10 +89,13 @@
     </div>
 
     <% if @post.user == current_user %>
-      <%= button_to "Delete This Post", @post,
-                  method: :delete,
-                  class: "btn-destructive",
-                  data: { turbo_confirm: "Are you sure..." } %>
+      <div class="post-owner-actions">
+        <%= link_to "Edit Post", edit_post_path(@post), class: "form-secondary-button" %>
+        <%= button_to "Delete This Post", @post,
+                    method: :delete,
+                    class: "btn-destructive",
+                    data: { turbo_confirm: "Are you sure..." } %>
+      </div>
     <% end %>
   </div>
 
@@ -167,6 +170,8 @@
           <% end %>
 
           <% if answer.user == current_user %>
+            <%= link_to "Edit Answer", edit_post_answer_path(@post, answer),
+                        class: "comment-reveal-button" %>
             <%= button_to "Delete Answer", [@post, answer],
                         method: :delete,
                         class: "comment-delete-link",
@@ -184,7 +189,61 @@
             <span class="identity-badge">Answerer revealed their identity.</span>
           <% end %>
         </div>
+
+        <% if answer.answer_comments.any? %>
+          <div class="answer-comments">
+            <% answer.answer_comments.order(created_at: :asc).each do |comment| %>
+              <div class="answer-comment">
+                <span class="comment-author"><%= display_author(comment.user, context: comment) %></span>
+                <span class="comment-time"><%= time_ago_in_words(comment.created_at) %> ago</span>
+                <p><%= comment.body %></p>
+                <% if comment.user == current_user %>
+                  <%= button_to 'Delete', post_answer_comment_path(@post, answer, comment),
+                                method: :delete,
+                                class: 'comment-delete-link',
+                                data: { turbo_confirm: 'Delete this comment?' } %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="answer-comment-form">
+          <%= form_with(model: AnswerComment.new, url: post_answer_comments_path(@post, answer)) do |form| %>
+            <div class="form-field">
+              <%= form.label :body, 'Add a comment', class: 'form-label' %>
+              <%= form.text_area :body, class: 'form-textarea', rows: 2, placeholder: 'Add a clarifying comment...' %>
+            </div>
+            <div class="form-actions">
+              <%= form.submit 'Comment', class: 'form-secondary-button' %>
+            </div>
+          <% end %>
+        </div>
+
+        <% if answer.answer_revisions.any? %>
+          <div class="revision-history answer-revisions">
+            <details>
+              <summary>Answer edit history (<%= answer.answer_revisions.count %>)</summary>
+              <ul>
+                <% answer.answer_revisions.order(created_at: :desc).each do |revision| %>
+                  <li>
+                    <div class="revision-meta">
+                      <span class="revision-author"><%= display_author(revision.user, context: answer) %></span>
+                      <span class="revision-time"><%= time_ago_in_words(revision.created_at) %> ago</span>
+                    </div>
+                    <p><%= simple_format(revision.body) %></p>
+                  </li>
+                <% end %>
+              </ul>
+            </details>
+          </div>
+        <% end %>
       </div>
     <% end %>
   </div>
+
+  <% if @post.post_revisions.any? %>
+    <hr class="section-divider">
+    <%= render 'revision_history', post: @post %>
+  <% end %>
 </div>

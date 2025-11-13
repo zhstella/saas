@@ -226,6 +226,26 @@ Then('I should not see {string}') do |text|
   expect(page).not_to have_content(text)
 end
 
+When('I comment {string} on the most recent answer') do |body|
+  within(all('.answer-comment-form').last) do
+    fill_in 'Add a comment', with: body
+    click_button 'Comment'
+  end
+end
+
+When('I edit the post titled {string} to have body {string}') do |title, new_body|
+  post = Post.find_by!(title: title)
+  visit Rails.application.routes.url_helpers.post_path(post)
+  click_link 'Edit Post'
+  fill_in 'Title', with: title
+  fill_in 'Content', with: new_body
+  select post.topic.name, from: 'Topic'
+  post.tags.each { |tag| check("post_tag_#{tag.id}", allow_label_click: true) }
+  select post.school || 'Columbia', from: 'School'
+  fill_in 'Course', with: post.course_code
+  click_button 'Save Changes'
+end
+
 def select_required_topic_and_tags
   topic = Topic.alphabetical.first
   select topic.name, from: 'Topic'
