@@ -105,4 +105,19 @@ RSpec.describe Post, type: :model do
       expect(post).to be_status_open
     end
   end
+
+  describe 'redaction fields' do
+    it 'defaults to visible' do
+      post = create(:post)
+
+      expect(post.redaction_state).to eq('visible')
+    end
+
+    it 'requires replacement content when redacted' do
+      post = build(:post, redaction_state: :redacted, redacted_body: nil)
+
+      expect(post).not_to be_valid
+      expect(post.errors[:redacted_body]).to include('must be provided when content is redacted')
+    end
+  end
 end

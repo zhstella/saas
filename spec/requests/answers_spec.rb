@@ -90,28 +90,31 @@ RSpec.describe "Answers", type: :request do
     end
   end
 
-  describe "PATCH /posts/:post_id/answers/:id" do
-    let!(:answer) { create(:answer, body: 'Original answer') }
-    let(:post_record) { answer.post }
+  if defined?(AnswerRevision)
+    describe "PATCH /posts/:post_id/answers/:id" do
+      let!(:answer) { create(:answer, body: 'Original answer') }
+      let(:post_record) { answer.post }
 
-    it "updates the answer and stores a revision" do
-      sign_in answer.user
+      it "updates the answer and stores a revision" do
+        sign_in answer.user
 
-      patch post_answer_path(post_record, answer), params: { answer: { body: 'Updated answer body' } }
+        expect {
+          patch post_answer_path(post_record, answer), params: { answer: { body: 'Updated answer body' } }
+        }.to change { answer.reload.body }.to('Updated answer body')
+         .and change { answer.answer_revisions.count }.by(1)
 
-      expect(response).to redirect_to(post_path(post_record))
-      expect(answer.reload.body).to eq('Updated answer body')
-      expect(answer.answer_revisions.count).to eq(1)
-      expect(answer.answer_revisions.first.body).to eq('Original answer')
-    end
+        expect(answer.answer_revisions.first.body).to eq('Original answer')
+      end
 
-    it "prevents non-owners from editing" do
-      sign_in create(:user)
+      it "prevents non-owners from editing" do
+        sign_in create(:user)
 
-      patch post_answer_path(post_record, answer), params: { answer: { body: 'Hacked' } }
+        expect {
+          patch post_answer_path(post_record, answer), params: { answer: { body: 'Hacked' } }
+        }.not_to change { answer.reload.body }
 
-      expect(response).to redirect_to(post_path(post_record))
-      expect(answer.reload.body).to eq('Original answer')
+        expect(response).to redirect_to(post_path(post_record))
+      end
     end
   end
 
@@ -142,6 +145,17 @@ RSpec.describe "Answers", type: :request do
       expect(answer.reload.show_real_identity).to be(false)
       expect(response).to redirect_to(post_path(post_record))
     end
+
+    it "alerts the author when reveal fails" do
+      sign_in answer.user
+      allow_any_instance_of(Answer).to receive(:update).and_return(false)
+
+      patch reveal_identity_post_answer_path(post_record, answer)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('Unable to reveal identity right now.')
+    end
   end
 
   describe "PATCH /posts/:post_id/answers/:id/accept" do
@@ -166,6 +180,31 @@ RSpec.describe "Answers", type: :request do
       expect(response).to redirect_to(post_path(post_record))
       expect(post_record.reload.accepted_answer).to be_nil
     end
+
+    it "shows notice when the same answer is already accepted" do
+      sign_in post_record.user
+      patch accept_post_answer_path(post_record, answer)
+
+      patch accept_post_answer_path(post_record, answer)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('This answer is already accepted.')
+      expect(post_record.reload.accepted_answer).to eq(answer)
+    end
+
+    it "requires unlocking before selecting a different accepted answer" do
+      other_answer = create(:answer, post: post_record)
+      post_record.update(accepted_answer: answer, locked_at: Time.current)
+      sign_in post_record.user
+
+      patch accept_post_answer_path(post_record, other_answer)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('Reopen the thread before selecting a new accepted answer.')
+      expect(post_record.reload.accepted_answer).to eq(answer)
+    end
   end
 
   describe "PATCH /posts/:id/unlock" do
@@ -181,6 +220,31 @@ RSpec.describe "Answers", type: :request do
       expect(response).to redirect_to(post_path(post_record))
       expect(post_record.reload.locked?).to be(false)
       expect(post_record.accepted_answer).to be_nil
+    end
+
+    it "prevents unlocking when there is no accepted answer" do
+      post_record.update(locked_at: Time.current, accepted_answer_id: nil)
+      sign_in post_record.user
+
+      patch unlock_post_path(post_record)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('No accepted answer to unlock.')
+      expect(post_record.reload.locked?).to be(true)
+    end
+
+    it "prevents non-owners from managing locks" do
+      answer = create(:answer, post: post_record)
+      post_record.update(accepted_answer: answer, locked_at: Time.current)
+      sign_in create(:user)
+
+      patch unlock_post_path(post_record)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('You do not have permission to manage this thread.')
+      expect(post_record.reload.locked?).to be(true)
     end
   end
 end

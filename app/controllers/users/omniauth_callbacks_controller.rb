@@ -17,7 +17,7 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   end
 
   def failure
-    flash[:alert] = 'Login failed. Please try again.'
+    flash[:alert] = 'Google sign-in failed. Please try again.'
     redirect_to unauthenticated_root_path
   end
 end

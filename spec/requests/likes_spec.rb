@@ -59,6 +59,17 @@ RSpec.describe "Likes", type: :request do
 
         expect(post_record.liked_by?(user)).to be false
       end
+
+      it "ignores redundant delete requests once the like is gone" do
+        sign_in user
+        delete post_like_path(post_record, like)
+
+        expect {
+          delete post_like_path(post_record, like)
+        }.not_to change(Like, :count)
+
+        expect(response).to redirect_to(post_path(post_record))
+      end
     end
 
     context "when not signed in" do

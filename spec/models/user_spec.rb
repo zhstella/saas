@@ -2,34 +2,53 @@ require 'rails_helper'
 
 RSpec.describe User, type: :model do
   describe '#anonymous_handle' do
-    it 'generates pseudonymous handle based on user ID' do
-      user = create(:user)
-      handle = user.anonymous_handle
+    context 'when the user has been persisted' do
+      it 'generates pseudonymous handle based on user ID' do
+        user = create(:user)
+        handle = user.anonymous_handle
 
-      expect(handle).to match(/^Lion #[A-Z0-9]{4}$/)
-      expect(handle).to include(user.id.to_s(36).upcase.rjust(4, "0"))
+        expect(handle).to match(/^Lion #[A-Z0-9]{4}$/)
+        expect(handle).to include(user.id.to_s(36).upcase.rjust(4, "0"))
+      end
+
+      it 'generates consistent handles for the same user' do
+        user = create(:user)
+        first_call = user.anonymous_handle
+        second_call = user.anonymous_handle
+
+        expect(first_call).to eq(second_call)
+      end
+
+      it 'generates different handles for different users' do
+        user1 = create(:user)
+        user2 = create(:user)
+
+        expect(user1.anonymous_handle).not_to eq(user2.anonymous_handle)
+      end
+
+      it 'generates handles in the format "Lion #XXXX"' do
+        user = create(:user)
+
+        expect(user.anonymous_handle).to start_with("Lion #")
+        expect(user.anonymous_handle.length).to eq(10)
+      end
     end
 
-    it 'generates consistent handles for the same user' do
-      user = create(:user)
-      first_call = user.anonymous_handle
-      second_call = user.anonymous_handle
+    context 'when the user has not been persisted' do
+      it 'falls back to a random token' do
+        user = build(:user)
+        allow(SecureRandom).to receive(:alphanumeric).and_return('ABCD')
 
-      expect(first_call).to eq(second_call)
-    end
+        expect(user.anonymous_handle).to eq('Lion #ABCD')
+      end
 
-    it 'generates different handles for different users' do
-      user1 = create(:user)
-      user2 = create(:user)
+      it 'generates a new token for each call' do
+        user = build(:user)
+        allow(SecureRandom).to receive(:alphanumeric).and_return('ABCD', 'EFGH')
 
-      expect(user1.anonymous_handle).not_to eq(user2.anonymous_handle)
-    end
-
-    it 'generates handles in the format "Lion #XXXX"' do
-      user = create(:user)
-
-      expect(user.anonymous_handle).to start_with("Lion #")
-      expect(user.anonymous_handle.length).to eq(10) # "Lion #" (6 chars) + 4 digit code = 10
+        expect(user.anonymous_handle).to eq('Lion #ABCD')
+        expect(user.anonymous_handle).to eq('Lion #EFGH')
+      end
     end
   end
 
@@ -131,6 +150,30 @@ RSpec.describe User, type: :model do
       expect(@new_user.email).to eq('new@columbia.edu')
       expect(@new_user.provider).to eq('google_oauth2')
       expect(@new_user.uid).to eq('fresh-uid')
+    end
+  end
+
+  describe 'roles' do
+    it 'defaults to student' do
+      user = create(:user)
+
+      expect(user.role).to eq('student')
+      expect(user).not_to be_can_moderate
+    end
+
+    it 'treats moderators as privileged users' do
+      moderator = create(:user, :moderator)
+
+      expect(moderator.role).to eq('moderator')
+      expect(moderator).to be_can_moderate
+    end
+
+    it 'treats staff and admins as privileged users' do
+      staff = create(:user, :staff)
+      admin = create(:user, :admin)
+
+      expect(staff).to be_can_moderate
+      expect(admin).to be_can_moderate
     end
   end
 end

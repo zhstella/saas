@@ -25,12 +25,56 @@ RSpec.describe Answer, type: :model do
     expect(identity).to be_present
   end
 
-  it 'clears acceptance if the answer is destroyed' do
-    post = create(:post)
-    answer = create(:answer, post: post)
-    post.update(accepted_answer: answer, locked_at: Time.current)
+  describe '#clear_post_acceptance' do
+    it 'clears acceptance and unlocks the post when the accepted answer is destroyed' do
+      post = create(:post)
+      answer = create(:answer, post: post)
+      post.update(accepted_answer: answer, locked_at: Time.current, status: Post::STATUSES[:solved])
 
-    expect { answer.destroy }.to change { post.reload.accepted_answer }.to(nil)
-    expect(post.locked?).to be_falsey
+      expect { answer.destroy }.to change { post.reload.accepted_answer }.to(nil)
+
+      post.reload
+      expect(post.locked_at).to be_nil
+      expect(post.status).to eq(Post::STATUSES[:open])
+    end
+
+    it 'leaves acceptance intact when a different answer is destroyed' do
+      post = create(:post)
+      accepted = create(:answer, post: post)
+      other_answer = create(:answer, post: post)
+      post.update(accepted_answer: accepted, locked_at: Time.current, status: Post::STATUSES[:solved])
+
+      expect {
+        other_answer.destroy
+      }.not_to change { post.reload.accepted_answer_id }
+
+      post.reload
+      expect(post.accepted_answer_id).to eq(accepted.id)
+      expect(post.locked_at).to be_present
+      expect(post.status).to eq(Post::STATUSES[:solved])
+    end
+  end
+
+  it 'is invalid when the post is locked' do
+    post = create(:post, locked_at: Time.current)
+    answer = build(:answer, post: post)
+
+    expect(answer).not_to be_valid
+    expect(answer.errors[:base]).to include('This thread is locked. No new answers can be added.')
+  end
+
+  describe 'redaction fields' do
+    it 'defaults to visible' do
+      answer = create(:answer)
+
+      expect(answer.redaction_state).to eq('visible')
+    end
+
+    it 'requires a replacement body when redacted' do
+      answer = build(:answer, redaction_state: :redacted, redacted_body: nil)
+
+      expect(answer).not_to be_valid
+      expect(answer.errors[:redacted_body]).to include('must be provided when content is redacted')
+    end
   end
 end

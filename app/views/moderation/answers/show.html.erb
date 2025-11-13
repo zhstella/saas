@@ -1,0 +1,37 @@
+<div class="main-content-container">
+  <h2 class="page-title">Answer Moderation</h2>
+
+  <p><strong>Thread:</strong> <%= link_to @post.title, post_path(@post) %></p>
+  <p><strong>Author:</strong> <%= @answer.user.email %></p>
+  <p><strong>Redaction State:</strong> <%= @answer.redaction_state.humanize %></p>
+
+  <hr class="section-divider">
+
+  <h3>Audit Trail</h3>
+  <% if @audit_logs.any? %>
+    <div class="audit-trail">
+      <% @audit_logs.each do |log| %>
+        <div class="audit-log-entry">
+          <div class="audit-meta">
+            <span class="audit-action"><strong><%= log.action.humanize %></strong></span>
+            <span class="audit-time"><%= log.created_at.strftime('%B %d, %Y at %I:%M %p') %></span>
+          </div>
+          <div class="audit-details">
+            <% if log.performed_by.present? %>
+              <p><strong>Performed By:</strong> <%= log.performed_by.email %></p>
+            <% end %>
+            <% if log.metadata.present? %>
+              <% log.metadata.each do |key, value| %>
+                <p><strong><%= key.humanize %>:</strong> <%= value %></p>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p>No audit logs for this answer.</p>
+    </div>
+  <% end %>
+</div>

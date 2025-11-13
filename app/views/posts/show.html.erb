@@ -1,10 +1,10 @@
 <%#
-  帖子详情页: 展示问题、所有回答、以及匿名/揭示身份等功能
+  Post detail page: displays question, all answers, and anonymity/identity reveal features
 %>
 
 <div class="main-content-container" data-controller="post-show">
 
-  <%# --- 帖子标题与作者信息 --- %>
+  <%# --- Post title and author information --- %>
   <h2 class="page-title"><%= @post.title %></h2>
   <div class="post-meta">
     <span class="post-author">
@@ -59,11 +59,54 @@
     <p class="identity-badge">Author chose to reveal their identity.</p>
   <% end %>
 
-  <div class="post-body">
-    <%= @post.body %>
-  </div>
+  <%# --- Post body with conditional rendering for redacted content --- %>
+  <% if @post.redacted? || @post.partial? %>
+    <% if @post.user == current_user %>
+      <%# Author view: Warning + original content visible %>
+      <div class="alert alert-warning">
+        <h4>Content Flagged</h4>
+        <p>Your post has been flagged for review.</p>
+        <% if @post.redacted_reason.present? %>
+          <p><strong>Reason:</strong> <%= @post.redacted_reason.humanize %></p>
+        <% end %>
+      </div>
+      <div class="post-body">
+        <%= @post.redacted_body || @post.body %>
+      </div>
+    <% elsif current_user&.can_moderate? %>
+      <%# Moderator view: Full content + moderation panel %>
+      <div class="moderator-panel alert alert-info">
+        <h4>Moderator View</h4>
+        <p><strong>Redaction State:</strong> <%= @post.redaction_state.humanize %></p>
+        <% if @post.redacted_reason.present? %>
+          <p><strong>Reason:</strong> <%= @post.redacted_reason.humanize %></p>
+        <% end %>
+        <% if @post.redacted_by.present? %>
+          <p><strong>Redacted by:</strong> <%= @post.redacted_by.email %></p>
+        <% end %>
+        <div class="moderator-actions">
+          <%= button_to "Restore Post", unredact_moderation_post_path(@post),
+                        method: :patch,
+                        class: "form-submit-button" %>
+        </div>
+      </div>
+      <div class="post-body">
+        <%= @post.redacted_body || @post.body %>
+      </div>
+    <% else %>
+      <%# General users: Placeholder message %>
+      <div class="alert alert-info">
+        <p>This post is currently under review for content policy violations.</p>
+      </div>
+    <% end %>
+  <% else %>
+    <%# Normal content display %>
+    <div class="post-body">
+      <%= @post.body %>
+    </div>
+  <% end %>
 
-  <%# --- 帖子操作 (点赞 / 回答按钮) --- %>
+  <%# --- Post actions (like / answer button) --- %>
   <div class="post-actions">
 
     <div class="post-actions-left">
@@ -97,11 +140,24 @@
                     data: { turbo_confirm: "Are you sure..." } %>
       </div>
     <% end %>
+
+    <%# Moderator actions %>
+    <% if current_user&.can_moderate? && !@post.redacted? %>
+      <div class="moderator-actions">
+        <%= button_to "Redact Post",
+                      redact_moderation_post_path(@post),
+                      method: :patch,
+                      class: "btn-destructive",
+                      form: { data: { turbo_frame: "_top" } },
+                      params: { reason: 'policy_violation', state: 'redacted' },
+                      data: { turbo_confirm: "Redact this post for policy violations?" } %>
+      </div>
+    <% end %>
   </div>
 
   <hr class="section-divider">
 
-  <%# --- 回答表单 --- %>
+  <%# --- Answer form --- %>
   <div data-post-show-target="answerForm">
     <% if @post.locked? %>
       <p class="identity-badge">This thread is locked. No new answers can be added.</p>
@@ -129,7 +185,7 @@
     <hr class="section-divider">
   </div>
 
-  <%# --- 回答列表 --- %>
+  <%# --- Answer list --- %>
   <h3 class="comments-title">Answers (<%= @answers.count %>)</h3>
 
   <div class="comments-list-container" id="answers">
@@ -154,9 +210,43 @@
           <% end %>
         </div>
 
-        <div class="comment-body">
-          <%= answer.body %>
-        </div>
+        <%# Answer body with conditional rendering for redacted content %>
+        <% if answer.redacted? || answer.partial? %>
+          <% if answer.user == current_user %>
+            <%# Author view: Warning + original content %>
+            <div class="alert alert-warning">
+              <p><strong>Your answer was flagged.</strong></p>
+              <% if answer.redacted_reason.present? %>
+                <p><strong>Reason:</strong> <%= answer.redacted_reason.humanize %></p>
+              <% end %>
+            </div>
+            <div class="comment-body">
+              <%= answer.redacted_body || answer.body %>
+            </div>
+          <% elsif current_user&.can_moderate? %>
+            <%# Moderator view %>
+            <div class="moderator-panel alert alert-info" style="font-size: 0.9em; padding: 0.5em;">
+              <p><strong>Moderator:</strong> Redacted (<%= answer.redaction_state %>)</p>
+              <%= button_to "Restore", unredact_moderation_answer_path(answer),
+                            method: :patch,
+                            class: "form-secondary-button",
+                            style: "font-size: 0.85em; padding: 0.3em 0.6em;" %>
+            </div>
+            <div class="comment-body">
+              <%= answer.redacted_body || answer.body %>
+            </div>
+          <% else %>
+            <%# General users: Placeholder %>
+            <div class="comment-body alert alert-info">
+              <p>This answer is currently under review for content policy violations.</p>
+            </div>
+          <% end %>
+        <% else %>
+          <%# Normal content %>
+          <div class="comment-body">
+            <%= answer.body %>
+          </div>
+        <% end %>
 
         <div class="comment-actions">
           <% if @post.user == current_user && !@post.locked? %>
@@ -187,6 +277,16 @@
             <% end %>
           <% elsif answer.show_real_identity? %>
             <span class="identity-badge">Answerer revealed their identity.</span>
+          <% end %>
+
+          <%# Moderator actions for answers %>
+          <% if current_user&.can_moderate? && !answer.redacted? %>
+            <%= button_to "Redact Answer",
+                          redact_moderation_answer_path(answer),
+                          method: :patch,
+                          class: "comment-delete-link",
+                          params: { reason: 'policy_violation', state: 'redacted' },
+                          data: { turbo_confirm: "Redact this answer for policy violations?" } %>
           <% end %>
         </div>
 

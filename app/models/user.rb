@@ -16,10 +16,23 @@ class User < ApplicationRecord
   has_many :answer_comments, dependent: :destroy
   has_many :post_revisions, dependent: :destroy
   has_many :answer_revisions, dependent: :destroy
+  has_many :redacted_posts, class_name: 'Post', foreign_key: :redacted_by_id, dependent: :nullify
+  has_many :redacted_answers, class_name: 'Answer', foreign_key: :redacted_by_id, dependent: :nullify
+
+  enum :role, {
+    student: 0,
+    moderator: 1,
+    staff: 2,
+    admin: 3
+  }, default: :student
 
   def anonymous_handle
     base = id ? id.to_s(36).upcase.rjust(4, '0') : SecureRandom.alphanumeric(4).upcase
     "Lion ##{base[0, 4]}"
+  end
+
+  def can_moderate?
+    moderator? || staff? || admin?
   end
 
   # 3. 修复了“账户链接”逻辑的 OmniAuth 方法

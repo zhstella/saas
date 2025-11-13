@@ -36,4 +36,25 @@ RSpec.describe PostSearchQuery do
     expect(results).to include(post_one)
     expect(results).not_to include(post_two)
   end
+
+  it 'filters by status' do
+    post_one.update!(status: Post::STATUSES[:solved])
+    results = described_class.new({ status: Post::STATUSES[:solved] }).call
+
+    expect(results).to contain_exactly(post_one)
+  end
+
+  it 'filters by school' do
+    post_two.update!(school: 'Barnard')
+    results = described_class.new({ school: 'Barnard' }).call
+
+    expect(results).to contain_exactly(post_two)
+  end
+
+  it 'filters by course code (case insensitive)' do
+    post_two.update!(course_code: 'COMS W4995')
+    results = described_class.new({ course_code: 'coms w4995' }).call
+
+    expect(results).to contain_exactly(post_two)
+  end
 end

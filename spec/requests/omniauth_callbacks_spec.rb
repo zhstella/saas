@@ -36,6 +36,18 @@ RSpec.describe 'Google OAuth callbacks', type: :request do
       expect(user.uid).to eq('google-uid')
     end
 
+    it 'does not set a flash notice when the format is non-navigational' do
+      user = create(:user, email: 'student@columbia.edu', provider: nil, uid: nil)
+      mock_google_auth(uid: 'google-uid', info: { email: user.email })
+      allow_any_instance_of(Users::OmniauthCallbacksController)
+        .to receive(:is_navigational_format?).and_return(false)
+
+      get user_google_oauth2_omniauth_callback_path
+
+      expect(response).to redirect_to(authenticated_root_path)
+      expect(flash[:notice]).to be_nil
+    end
+
     it 'rejects users outside the allowed domains' do
       mock_google_auth(info: { email: 'user@gmail.com' })
 
@@ -45,6 +57,16 @@ RSpec.describe 'Google OAuth callbacks', type: :request do
 
       expect(response).to redirect_to(unauthenticated_root_path)
       expect(flash[:alert]).to eq('Access Denied. You must use a @columbia.edu or @barnard.edu email address to log in.')
+    end
+  end
+
+  describe 'GET /users/auth/failure' do
+    it 'redirects to the unauthenticated root with an error message' do
+      get '/users/auth/failure', params: { strategy: 'google_oauth2' }
+
+      expect(response).to redirect_to(unauthenticated_root_path)
+      follow_redirect!
+      expect(response.body).to include('Google sign-in failed. Please try again.')
     end
   end
 end

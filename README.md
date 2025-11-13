@@ -77,8 +77,10 @@
 - Filter the feed with full-text search plus topic, tag, school, course, timeframe, and status facets powered by the new `PostSearchQuery` service.
 - Pivot to the “My Threads” feed from the header to see only the posts you authored, complete with empty-state messaging and support for the full filter toolbox.
 - Collaborate inside threads with answer-level comments, including ownership-protected create/delete actions and comment logging for pseudonym continuity.
-- Catch duplicates before publishing via the composer’s “Possible similar threads” panel, powered by the new `DuplicatePostFinder` service the preview and edit forms call.
+- Catch duplicates before publishing via the composer's "Possible similar threads" panel, powered by the new `DuplicatePostFinder` service the preview and edit forms call.
 - Edit posts and answers after publishing while preserving the full revision history so classmates and moderators can trace changes; authors can see their timelines inline on the thread page.
+- Moderate content with role-based permissions: moderators/staff can redact posts and answers for policy violations, with transparent placeholder messages shown to general users while authors retain access to original content and appeal workflows.
+- Access the moderation dashboard (`/moderation/posts`) to review redacted content, view audit trails, and restore posts after review (moderator/staff only).
 
 
 ## Test Suites
@@ -91,7 +93,7 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- 106 examples / 0 failures (line coverage 96.03%, branch coverage 83.87%).
+- Line Coverage: 96.56% (618 / 640)
 - `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, expiration logic, and thread-identity callback.
 - `spec/models/answer_spec.rb`: body validations, per-thread identities, reveal logging, and acceptance cleanup.
 - `spec/models/answer_comment_spec.rb`: comment validation + thread delegation to preserve pseudonyms.
@@ -133,7 +135,7 @@ open coverage/index.html
 ```
 
 **Target:** 90%+ statement coverage
-**Local test results:** 95.76% line coverage, 84.0% branch coverage (after running both suites)
+**Local test results:** 96.56% line coverage (after running both suites)
 
 Running the test suites will generate a detailed coverage report in `coverage/index.html`.
 
@@ -146,6 +148,31 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 - A daily `ExpirePostsJob` can be scheduled (e.g., via Heroku Scheduler or cron) to purge posts whose `expires_at` timestamp has passed.
 - Seeded tag allowlist (via `TaxonomySeeder`): `academics`, `courses/coms`, `advising`, `housing`, `visas-immigration`, `financial-aid`, `mental-health`, `student-life`, `career`, `marketplace`, `accessibility-ods`, `public-safety`, `tech-support`, `international`, `resources`.
 
+### OpenAI Moderation API (Basic Implementation)
+The moderation system integrates with OpenAI's Moderation API for automated content screening.
+
+- **Model**: `omni-moderation-latest` (FREE tier available)
+- **API Key Setup**: Add `OPENAI_API_KEY` to your environment:
+  ```bash
+  # .env file (for local development)
+  OPENAI_API_KEY=your_openai_api_key_here
+
+  # Or in config/credentials.yml.enc
+  VISUAL="code --wait" bin/rails credentials:edit
+  # Add: openai_api_key: your_key_here
+  ```
+- **Getting an API Key**: Visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) to create a free account and generate your API key.
+
+**Current Implementation (Phase 1)**:
+- Basic content screening using OpenAI's `omni-moderation-latest` detects flagged content automatically
+- Returns simple `flagged: true/false` status for policy violation detection
+
+**Planned for Future Iterations**:
+- Detailed category analysis (violence, harassment, hate, sexual content, etc.) with confidence scores
+- Auto-hide workflow for flagged posts with author appeal system
+- Background job integration for automatic screening on post creation
+- Moderator dashboard integration for approve/reject actions on flagged content
+
 ## Addressing Iteration 1 Feedback
 - Added the missing user-story coverage that graders flagged (blank search alert, invalid post/answer validations, and guest redirects) so every scenario now runs via Cucumber (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/answers/add_answer.feature`).
 - Kept the post creation flow behind authentication and clarified the behavior in both README and acceptance tests so unauthenticated users always see the SSO screen first (`config/routes.rb`, `features/posts/create_post.feature`).
@@ -157,11 +184,13 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 CU_Blueboard/
 ├── app/
 │   ├── controllers/
-│   │   ├── application_controller.rb             # Global Devise auth hook
+│   │   ├── application_controller.rb             # Global auth hook + moderator helpers
 │   │   ├── posts_controller.rb                   # Post CRUD + My Threads + revisions
 │   │   ├── answers_controller.rb                 # Answer CRUD + revisions + accept
 │   │   ├── answer_comments_controller.rb         # Answer comment create/destroy
 │   │   ├── likes_controller.rb                   # Like toggle endpoints
+│   │   ├── moderation/posts_controller.rb        # Moderation dashboard & redaction
+│   │   ├── moderation/answers_controller.rb      # Answer redaction actions
 │   │   └── users/omniauth_callbacks_controller.rb # Google SSO callback handler
 │   ├── jobs/
 │   │   └── expire_posts_job.rb                   # Background cleanup for expired threads
@@ -169,7 +198,8 @@ CU_Blueboard/
 │   │   └── post_search_query.rb                  # Multi-filter feed search service
 │   ├── services/
 │   │   ├── taxonomy_seeder.rb                    # Seeds topics & tags (TaxonomySeeder)
-│   │   └── duplicate_post_finder.rb              # Composer duplicate detection
+│   │   ├── duplicate_post_finder.rb              # Composer duplicate detection
+│   │   └── redaction_service.rb                  # Post/Answer redaction service
 │   ├── models/
 │   │   ├── post.rb                               # Post validations + taxonomy + status helpers
 │   │   ├── post_revision.rb                      # Stores post edit history
@@ -182,6 +212,9 @@ CU_Blueboard/
 │   ├── views/posts/                              # Index/show/new/edit templates & shared partials
 │   │   └── _revision_history.html.erb            # Shared revision list
 │   ├── views/answers/edit.html.erb               # Answer edit form
+│   ├── views/moderation/posts/                   # Moderation views
+│   │   ├── index.html.erb                        # Moderation dashboard
+│   │   └── show.html.erb                         # Post audit detail view
 │   ├── views/layouts/application.html.erb        # Main layout (nav, flashes)
 │   ├── helpers/application_helper.rb             # `display_author` pseudonym helper
 │   └── javascript/
@@ -215,7 +248,9 @@ CU_Blueboard/
 │   ├── factories/{users,posts,answers,likes,answer_comments,post_revisions,answer_revisions}.rb # FactoryBot fixtures
 │   ├── models/{post,answer,like,user,answer_comment,post_revision,answer_revision}_spec.rb        # Model specs
 │   ├── requests/{posts,answers,likes,answer_comments,omniauth_callbacks}_spec.rb                  # Request specs
+│   ├── requests/moderation/{posts,answers}_spec.rb                                              # Moderation request specs
 │   ├── services/duplicate_post_finder_spec.rb                                                    # Composer duplicate detection
+│   ├── services/redaction_service_spec.rb                                                        # Redaction service specs
 │   ├── helpers/application_helper_spec.rb                                                        # Helper method specs
 │   ├── queries/post_search_query_spec.rb                                                         # Search service specs
 │   └── rails_helper.rb                                                                           # RSpec + Devise/Test helpers config

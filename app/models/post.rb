@@ -10,13 +10,16 @@ class Post < ApplicationRecord
   has_many :tags, through: :post_tags
   has_many :post_revisions, dependent: :destroy
   belongs_to :accepted_answer, class_name: 'Answer', optional: true
+  belongs_to :redacted_by, class_name: 'User', optional: true
 
   after_create :ensure_thread_identity
   scope :active, -> { where('expires_at IS NULL OR expires_at > ?', Time.current) }
+  scope :ai_flagged, -> { where(ai_flagged: true) }
 
   validate :expires_at_within_window
   validate :accepted_answer_belongs_to_post
   validate :tags_within_limit
+  validate :redacted_body_presence
 
   # 验证
   validates :title, presence: true
@@ -42,6 +45,12 @@ class Post < ApplicationRecord
   TAG_LIMIT = 5
   MIN_TAGS = 1
   SCHOOLS = [ 'Columbia', 'Barnard' ].freeze
+  REDACTION_STATES = {
+    visible: 'visible',
+    partial: 'partial',
+    redacted: 'redacted'
+  }.freeze
+  enum :redaction_state, REDACTION_STATES, default: :visible
 
   # 辅助方法：检查特定用户是否已点赞
   def liked_by?(user)
@@ -103,6 +112,14 @@ class Post < ApplicationRecord
       errors.add(:tags, 'must include at least one tag')
     elsif count > TAG_LIMIT
       errors.add(:tags, "cannot include more than #{TAG_LIMIT} tags")
+    end
+  end
+
+  def redacted_body_presence
+    return if redaction_state == REDACTION_STATES[:visible]
+
+    if redacted_body.blank?
+      errors.add(:redacted_body, 'must be provided when content is redacted')
     end
   end
 end

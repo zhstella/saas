@@ -1,0 +1,127 @@
+<%#
+  Moderation Dashboard - Lists all redacted and flagged posts
+%>
+
+<div class="main-content-container">
+  <h2 class="page-title">Moderation Dashboard</h2>
+  <p class="post-meta">Manage redacted and flagged content</p>
+
+  <hr class="section-divider">
+
+  <%# Redacted Posts Section %>
+  <h3 class="comments-title">Redacted Posts (<%= @redacted_posts.total_count %>)</h3>
+
+  <% if @redacted_posts.any? %>
+    <div class="posts-list">
+      <% @redacted_posts.each do |post| %>
+        <div class="post-card">
+          <div class="post-card-header">
+            <h3 class="post-title">
+              <%= link_to post.title, post_path(post) %>
+            </h3>
+            <span class="post-card-status <%= post.redaction_state %>">
+              <%= post.redaction_state.humanize %>
+            </span>
+          </div>
+
+          <div class="post-card-meta">
+            <span class="meta-chip">
+              Author: <%= post.user.email %>
+            </span>
+            <span class="meta-chip">
+              Redacted by: <%= post.redacted_by&.email || 'Unknown' %>
+            </span>
+            <span class="meta-chip">
+              Reason: <%= post.redacted_reason&.humanize || 'Not specified' %>
+            </span>
+            <span class="meta-chip">
+              <%= time_ago_in_words(post.updated_at) %> ago
+            </span>
+          </div>
+
+          <div class="post-card-body">
+            <p class="post-excerpt">
+              <%= truncate(post.redacted_body || post.body, length: 200) %>
+            </p>
+          </div>
+
+          <div class="post-card-actions">
+            <%= link_to "View Full Post", post_path(post), class: "form-secondary-button" %>
+            <%= link_to "View Details", moderation_post_path(post), class: "form-secondary-button" %>
+            <%= button_to "Restore",
+                          unredact_moderation_post_path(post),
+                          method: :patch,
+                          class: "form-submit-button",
+                          data: { turbo_confirm: "Restore this post?" } %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Pagination %>
+    <div class="pagination-container">
+      <%= paginate @redacted_posts %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p>No redacted posts at this time.</p>
+    </div>
+  <% end %>
+
+  <hr class="section-divider">
+
+  <%# Future: AI-Flagged Posts Section %>
+  <%# This section will be populated when AI auto-hide workflow (#6) is implemented %>
+  <div class="future-section" style="opacity: 0.5;">
+    <h3 class="comments-title">AI-Flagged Posts (Coming Soon)</h3>
+    <p class="post-meta">
+      This section will display posts flagged by AI moderation when Workstream #6 is implemented.
+    </p>
+  </div>
+</div>
+
+<style>
+  .post-card-status {
+    display: inline-block;
+    padding: 0.25em 0.75em;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .post-card-status.redacted {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .post-card-status.partial {
+    background-color: #ffc107;
+    color: #000;
+  }
+
+  .moderator-panel {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+  }
+
+  .moderator-actions {
+    margin-top: 0.5em;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2em;
+    color: #6c757d;
+  }
+
+  .future-section {
+    border: 2px dashed #dee2e6;
+    padding: 1.5em;
+    border-radius: 8px;
+    margin-top: 2em;
+  }
+</style>

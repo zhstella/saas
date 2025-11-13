@@ -35,10 +35,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.text "body"
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
+    t.text "redacted_body"
+    t.integer "redacted_by_id"
+    t.string "redacted_reason"
+    t.string "redaction_state", default: "visible", null: false
     t.boolean "show_real_identity", default: false, null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["post_id"], name: "index_answers_on_post_id"
+    t.index ["redacted_by_id"], name: "index_answers_on_redacted_by_id"
     t.index ["user_id"], name: "index_answers_on_user_id"
   end
 
@@ -88,12 +93,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
 
   create_table "posts", force: :cascade do |t|
     t.integer "accepted_answer_id"
+    t.boolean "ai_flagged", default: false, null: false
     t.text "body"
     t.string "course_code"
     t.datetime "created_at", null: false
     t.datetime "expires_at"
     t.datetime "locked_at"
+    t.text "redacted_body"
+    t.integer "redacted_by_id"
+    t.string "redacted_reason"
+    t.string "redaction_state", default: "visible", null: false
     t.string "school"
+    t.datetime "screened_at"
     t.boolean "show_real_identity", default: false, null: false
     t.string "status", default: "open", null: false
     t.string "title"
@@ -101,9 +112,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["accepted_answer_id"], name: "index_posts_on_accepted_answer_id"
+    t.index ["ai_flagged"], name: "index_posts_on_ai_flagged"
     t.index ["course_code"], name: "index_posts_on_course_code"
     t.index ["expires_at"], name: "index_posts_on_expires_at"
     t.index ["locked_at"], name: "index_posts_on_locked_at"
+    t.index ["redacted_by_id"], name: "index_posts_on_redacted_by_id"
     t.index ["school"], name: "index_posts_on_school"
     t.index ["status"], name: "index_posts_on_status"
     t.index ["topic_id"], name: "index_posts_on_topic_id"
@@ -150,10 +163,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
+    t.text "moderation_notes"
     t.string "provider"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
+    t.integer "role", default: 0, null: false
     t.string "uid"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
@@ -166,6 +181,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
   add_foreign_key "answer_revisions", "users"
   add_foreign_key "answers", "posts"
   add_foreign_key "answers", "users"
+  add_foreign_key "answers", "users", column: "redacted_by_id"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "audit_logs", "users", column: "performed_by_id"
   add_foreign_key "likes", "posts"
@@ -177,6 +193,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_000120) do
   add_foreign_key "posts", "answers", column: "accepted_answer_id"
   add_foreign_key "posts", "topics"
   add_foreign_key "posts", "users"
+  add_foreign_key "posts", "users", column: "redacted_by_id"
   add_foreign_key "thread_identities", "posts"
   add_foreign_key "thread_identities", "users"
 end

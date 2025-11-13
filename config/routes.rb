@@ -1,24 +1,38 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks' }
-  
-  # --- 这是新的路由逻辑 ---
-  
-  # 1. 为【已登录】的用户设置根路径 (root)
-  # 当用户登录时, 访问 "http://localhost:3000/" 会定向到 posts#index
+  devise_scope :user do
+    match '/users/auth/failure', to: 'users/omniauth_callbacks#failure', via: [:get, :post]
+  end
+
+  # Authenticated users see the posts feed
   authenticated :user do
     root 'posts#index', as: :authenticated_root
   end
 
-  # 2. 为【未登录】的用户设置根路径 (root)
-  # 当用户未登录时, 访问 "http://localhost:3000/" 会定向到登录页面
+  # Unauthenticated users see the login page
   unauthenticated do
     devise_scope :user do
       root 'devise/sessions#new', as: :unauthenticated_root
     end
   end
-  
-  # 3. 你的帖子、评论、点赞路由保持不变
-  # 我们已经用上面的逻辑替换了旧的 'root "posts#index"'
+
+  # Moderation namespace for staff/moderator actions
+  namespace :moderation do
+    resources :posts, only: [:index, :show] do
+      member do
+        patch :redact
+        patch :unredact
+      end
+    end
+
+    resources :answers, only: [:show] do
+      member do
+        patch :redact
+        patch :unredact
+      end
+    end
+  end
+
   resources :posts do
     member do
       patch :reveal_identity
@@ -37,6 +51,7 @@ Rails.application.routes.draw do
 
       resources :comments, only: [:create, :destroy], controller: 'answer_comments'
     end
+
     resources :likes, only: [:create, :destroy]
   end
 end

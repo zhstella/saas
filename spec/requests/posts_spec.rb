@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Posts", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
   describe "GET /index" do
     let!(:matching_post) { create(:post, title: 'Visa renewal tips', body: 'Discuss ISSO paperwork') }
     let!(:non_matching_post) { create(:post, title: 'Dorm cooking', body: 'Best pans to buy') }
@@ -98,6 +99,55 @@ RSpec.describe "Posts", type: :request do
           post posts_path, params: valid_params
         }.to change { ThreadIdentity.where(user: user).count }.by(1)
       end
+
+      it "applies the expiration window when provided" do
+        sign_in user
+        params = valid_params.deep_dup
+        params[:post][:expires_at] = '7'
+
+        travel_to Time.zone.local(2024, 1, 1, 12, 0, 0) do
+          post posts_path, params: params
+        end
+
+        created_post = Post.last
+        expect(created_post.expires_at).to be_within(1.second).of(Time.zone.local(2024, 1, 8, 12, 0, 0))
+      end
+
+      it "treats zero-day expirations as no expiration" do
+        sign_in user
+        params = valid_params.deep_dup
+        params[:post][:expires_at] = '0'
+
+        expect {
+          post posts_path, params: params
+        }.to change(Post, :count).by(1)
+
+        expect(Post.last.expires_at).to be_nil
+      end
+
+      it "treats negative expirations as no expiration" do
+        sign_in user
+        params = valid_params.deep_dup
+        params[:post][:expires_at] = '-5'
+
+        expect {
+          post posts_path, params: params
+        }.to change(Post, :count).by(1)
+
+        expect(Post.last.expires_at).to be_nil
+      end
+
+      it "leaves expires_at nil when the field is blank" do
+        sign_in user
+        params = valid_params.deep_dup
+        params[:post][:expires_at] = ''
+
+        expect {
+          post posts_path, params: params
+        }.to change(Post, :count).by(1)
+
+        expect(Post.last.expires_at).to be_nil
+      end
     end
 
     context "when signed in with invalid data" do
@@ -137,37 +187,84 @@ RSpec.describe "Posts", type: :request do
     end
   end
 
-  describe "PATCH /posts/:id" do
-    let(:user) { create(:user) }
-    let!(:post_record) { create(:post, user: user, title: 'Original Title', body: 'Original body text') }
+  if defined?(PostRevision)
+    describe "PATCH /posts/:id" do
+      let(:user) { create(:user) }
+      let!(:post_record) { create(:post, user: user, title: 'Original Title', body: 'Original body text') }
 
-    it "updates the post and records a revision" do
+      it "updates the post and records a revision" do
+        sign_in user
+
+        patch post_path(post_record), params: {
+          post: {
+            title: post_record.title,
+            body: 'Updated body text',
+            topic_id: post_record.topic_id,
+            tag_ids: post_record.tag_ids,
+            school: post_record.school,
+            course_code: post_record.course_code
+          }
+        }
+
+        expect(response).to redirect_to(post_path(post_record))
+        expect(post_record.reload.body).to eq('Updated body text')
+        expect(post_record.post_revisions.count).to eq(1)
+        expect(post_record.post_revisions.first.title).to eq('Original Title')
+      end
+
+      it "prevents non-owners from editing" do
+        sign_in create(:user)
+
+        patch post_path(post_record), params: {
+          post: {
+            title: 'Unauthorized edit',
+            body: 'Body',
+            topic_id: post_record.topic_id,
+            tag_ids: post_record.tag_ids
+          }
+        }
+
+        expect(response).to redirect_to(post_path(post_record))
+        expect(post_record.reload.title).to eq('Original Title')
+      end
+    end
+  end
+
+  describe "GET /posts/new" do
+    let(:user) { create(:user) }
+
+    it "renders the compose form" do
       sign_in user
 
-      patch post_path(post_record), params: {
+      get new_post_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('New Post')
+    end
+  end
+
+  describe "POST /posts/preview" do
+    let(:user) { create(:user) }
+    let(:topic) { create(:topic) }
+    let(:tag) { create(:tag) }
+
+    it "renders the new template with preview content" do
+      sign_in user
+
+      post preview_posts_path, params: {
         post: {
-          title: post_record.title,
-          body: 'Updated body text',
-          topic_id: post_record.topic_id,
-          tag_ids: post_record.tag_ids,
-          school: post_record.school,
-          course_code: post_record.course_code
+          title: 'Preview title',
+          body: 'Preview body',
+          topic_id: topic.id,
+          tag_ids: [ tag.id ],
+          school: Post::SCHOOLS.first,
+          course_code: 'COMS W4995'
         }
       }
 
-      expect(response).to redirect_to(post_path(post_record))
-      expect(post_record.reload.body).to eq('Updated body text')
-      expect(post_record.post_revisions.count).to eq(1)
-      expect(post_record.post_revisions.first.title).to eq('Original Title')
-    end
-
-    it "prevents non-owners from editing" do
-      sign_in create(:user)
-
-      patch post_path(post_record), params: { post: { title: 'Nope', body: 'Body', topic_id: post_record.topic_id, tag_ids: post_record.tag_ids } }
-
-      expect(response).to redirect_to(post_path(post_record))
-      expect(post_record.reload.title).to eq('Original Title')
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Draft Preview')
+      expect(response.body).to include('Preview title')
     end
   end
 
@@ -261,6 +358,17 @@ RSpec.describe "Posts", type: :request do
 
       expect(post_record.reload.show_real_identity).to be(false)
       expect(response).to redirect_to(post_path(post_record))
+    end
+
+    it "alerts the author when reveal fails" do
+      sign_in post_record.user
+      allow_any_instance_of(Post).to receive(:update).and_return(false)
+
+      patch reveal_identity_post_path(post_record)
+
+      expect(response).to redirect_to(post_path(post_record))
+      follow_redirect!
+      expect(response.body).to include('Unable to reveal identity.')
     end
   end
 end

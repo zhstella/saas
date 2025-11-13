@@ -1,0 +1,126 @@
+<%#
+  Moderation Post Detail - Shows post details and audit trail
+%>
+
+<div class="main-content-container">
+  <h2 class="page-title">Moderation Details: <%= @post.title %></h2>
+
+  <%= link_to "← Back to Dashboard", moderation_posts_path, class: "form-secondary-button" %>
+
+  <hr class="section-divider">
+
+  <%# Post Information %>
+  <div class="moderator-panel">
+    <h3>Post Information</h3>
+    <div class="post-card-meta">
+      <p><strong>Author:</strong> <%= @post.user.email %></p>
+      <p><strong>Created:</strong> <%= @post.created_at.strftime('%B %d, %Y at %I:%M %p') %></p>
+      <p><strong>Status:</strong> <%= @post.status.humanize %></p>
+      <p><strong>Redaction State:</strong> <%= @post.redaction_state.humanize %></p>
+
+      <% if @post.redacted_by.present? %>
+        <p><strong>Redacted By:</strong> <%= @post.redacted_by.email %></p>
+        <p><strong>Redaction Reason:</strong> <%= @post.redacted_reason&.humanize || 'Not specified' %></p>
+      <% end %>
+    </div>
+
+    <div class="moderator-actions">
+      <%= link_to "View Public Page", post_path(@post), class: "form-secondary-button" %>
+
+      <% if @post.redacted? || @post.partial? %>
+        <%= button_to "Restore Post",
+                      unredact_moderation_post_path(@post),
+                      method: :patch,
+                      class: "form-submit-button" %>
+      <% else %>
+        <%= button_to "Redact Post",
+                      redact_moderation_post_path(@post),
+                      method: :patch,
+                      class: "btn-destructive",
+                      params: { reason: 'policy_violation', state: 'redacted' },
+                      data: { turbo_confirm: "Redact this post?" } %>
+      <% end %>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <%# Post Content %>
+  <h3>Content</h3>
+  <div class="post-body" style="background: #f8f9fa; padding: 1em; border-radius: 4px;">
+    <%= simple_format(@post.redacted_body || @post.body) %>
+  </div>
+
+  <hr class="section-divider">
+
+  <%# Audit Trail %>
+  <h3>Audit Trail</h3>
+
+  <% if @audit_logs.any? %>
+    <div class="audit-trail">
+      <% @audit_logs.each do |log| %>
+        <div class="audit-log-entry">
+          <div class="audit-meta">
+            <span class="audit-action"><strong><%= log.action.humanize %></strong></span>
+            <span class="audit-time"><%= log.created_at.strftime('%B %d, %Y at %I:%M %p') %></span>
+          </div>
+
+          <div class="audit-details">
+            <% if log.performed_by.present? %>
+              <p><strong>Performed By:</strong> <%= log.performed_by.email %></p>
+            <% end %>
+            <% if log.metadata.present? %>
+              <% log.metadata.each do |key, value| %>
+                <p><strong><%= key.humanize %>:</strong> <%= value %></p>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p>No audit logs for this post.</p>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .audit-trail {
+    margin-top: 1em;
+  }
+
+  .audit-log-entry {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1em;
+    margin-bottom: 1em;
+  }
+
+  .audit-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .audit-action {
+    color: #0056b3;
+    font-weight: 600;
+  }
+
+  .audit-time {
+    color: #6c757d;
+    font-size: 0.9em;
+  }
+
+  .audit-details {
+    font-size: 0.95em;
+  }
+
+  .audit-details p {
+    margin: 0.25em 0;
+  }
+</style>
