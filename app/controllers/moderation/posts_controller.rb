@@ -2,19 +2,27 @@
 module Moderation
   class PostsController < ApplicationController
     before_action :require_moderator!
-    before_action :set_post, only: [:show, :redact, :unredact]
+    before_action :set_post, only: [ :show, :redact, :unredact ]
 
     # GET /moderation/posts
     # Dashboard listing flagged and redacted posts
     def index
-      @redacted_posts = Post.where(redaction_state: [:redacted, :partial])
+      @redacted_posts = Post.where(redaction_state: [ :redacted, :partial ])
                             .includes(:user, :redacted_by)
                             .order(updated_at: :desc)
-                            .page(params[:page])
-                            .per(20)
 
-      # Future: Add AI-flagged posts when AI auto-hide is implemented
-      # @ai_flagged_posts = Post.where(ai_flagged: true, status: 'hidden')
+      if @redacted_posts.respond_to?(:page)
+        @redacted_posts = @redacted_posts.page(params[:page]).per(20)
+      end
+
+      # AI-flagged posts (not yet redacted by human moderators)
+      @ai_flagged_posts = Post.where(ai_flagged: true, redaction_state: 'visible')
+                              .includes(:user, :redacted_by)
+                              .order(updated_at: :desc)
+
+      if @ai_flagged_posts.respond_to?(:page)
+        @ai_flagged_posts = @ai_flagged_posts.page(params[:page]).per(20)
+      end
     end
 
     # GET /moderation/posts/:id

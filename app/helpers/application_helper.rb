@@ -1,10 +1,10 @@
 module ApplicationHelper
   def display_author(user, context: nil)
-    return "Anonymous Student" unless user
+    return 'Anonymous Student' unless user
 
     return real_identity_for(user) if reveal_real_identity?(context)
 
-    return "You" if current_user.present? && current_user == user
+    return 'You' if current_user.present? && current_user == user
 
     thread = thread_from(context)
     return ThreadIdentity.for(user, thread).pseudonym if thread

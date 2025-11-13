@@ -115,6 +115,15 @@ RSpec.describe "Answers", type: :request do
 
         expect(response).to redirect_to(post_path(post_record))
       end
+
+      it "renders the edit form when the update fails" do
+        sign_in answer.user
+
+        patch post_answer_path(post_record, answer), params: { answer: { body: '' } }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("Body can&#39;t be blank")
+      end
     end
   end
 

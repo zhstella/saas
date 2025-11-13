@@ -43,7 +43,7 @@ class PostsController < ApplicationController
     @post = current_user.posts.new(post_params)
 
     if @post.save
-      redirect_to posts_path, notice: "Post was successfully created!"
+      redirect_to posts_path, notice: 'Post was successfully created!'
     else
       assign_duplicate_posts(@post)
       render :new, status: :unprocessable_entity
@@ -70,9 +70,9 @@ class PostsController < ApplicationController
   def destroy
     if @post.user == current_user
       @post.destroy
-      redirect_to posts_url, notice: "Post deleted."
+      redirect_to posts_url, notice: 'Post deleted.'
     else
-      redirect_to @post, alert: "You do not have permission to delete this post."
+      redirect_to @post, alert: 'You do not have permission to delete this post.'
     end
   end
 
@@ -80,12 +80,12 @@ class PostsController < ApplicationController
     if @post.user == current_user
       if @post.update(show_real_identity: true)
         AuditLog.record_identity_reveal(auditable: @post, actor: current_user)
-        redirect_to @post, notice: "Your identity is now visible on this thread."
+        redirect_to @post, notice: 'Your identity is now visible on this thread.'
       else
-        redirect_to @post, alert: "Unable to reveal identity."
+        redirect_to @post, alert: 'Unable to reveal identity.'
       end
     else
-      redirect_to @post, alert: "You do not have permission to reveal this identity."
+      redirect_to @post, alert: 'You do not have permission to reveal this identity.'
     end
   end
 
@@ -112,6 +112,7 @@ class PostsController < ApplicationController
       :topic_id,
       :school,
       :course_code,
+      :ai_flagged,
       tag_ids: []
     )
     permitted[:tag_ids] ||= []
@@ -140,7 +141,7 @@ class PostsController < ApplicationController
 
   def build_filter_form
     @filter_form = filter_params.presence || {}.with_indifferent_access
-    flash.now[:alert] = "Please enter text to search." if blank_search_requested?
+    flash.now[:alert] = 'Please enter text to search.' if blank_search_requested?
   end
 
   def authorize_owner!

@@ -2,7 +2,7 @@
 module Moderation
   class AnswersController < ApplicationController
     before_action :require_moderator!
-    before_action :set_answer, only: [:show, :redact, :unredact]
+    before_action :set_answer, only: [ :show, :redact, :unredact ]
 
     # GET /moderation/answers/:id
     # Show answer details and audit trail

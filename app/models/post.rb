@@ -13,6 +13,7 @@ class Post < ApplicationRecord
   belongs_to :redacted_by, class_name: 'User', optional: true
 
   after_create :ensure_thread_identity
+  after_create_commit :screen_content_async
   scope :active, -> { where('expires_at IS NULL OR expires_at > ?', Time.current) }
   scope :ai_flagged, -> { where(ai_flagged: true) }
 
@@ -54,13 +55,20 @@ class Post < ApplicationRecord
 
   # 辅助方法：检查特定用户是否已点赞
   def liked_by?(user)
-    likes.exists?(user: user)
+    user_id = extract_user_id(user)
+    return false unless user_id
+
+    likes.exists?(user_id: user_id)
   end
 
   # 辅助方法：找到特定用户的点赞
   def find_like_by(user)
-    likes.find_by(user: user)
+    user_id = extract_user_id(user)
+    return nil unless user_id
+
+    likes.find_by(user_id: user_id)
   end
+
 
   def locked?
     locked_at.present?
@@ -86,6 +94,18 @@ class Post < ApplicationRecord
   end
 
   private
+
+  def screen_content_async
+    # Enqueue background job to screen content with OpenAI Moderation API
+    ScreenPostContentJob.perform_later(id)
+  end
+
+  def extract_user_id(user)
+    return nil unless user
+    return user[:id] if user.respond_to?(:[]) && !user.respond_to?(:id)
+
+    user.id
+  end
 
   def ensure_thread_identity
     ThreadIdentity.find_or_create_by!(user: user, post: self)

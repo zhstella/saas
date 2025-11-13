@@ -9,7 +9,7 @@ class RedactionService
   # @return [Boolean] true if successful
   def self.redact_post(post:, moderator:, reason:, state: :redacted)
     raise ArgumentError, 'Moderator must have moderation privileges' unless moderator.can_moderate?
-    raise ArgumentError, 'Invalid redaction state' unless [:redacted, :partial].include?(state)
+    raise ArgumentError, 'Invalid redaction state' unless [ :redacted, :partial ].include?(state)
 
     ActiveRecord::Base.transaction do
       # Store original body if not already redacted
@@ -100,7 +100,7 @@ class RedactionService
   # @return [Boolean] true if successful
   def self.redact_answer(answer:, moderator:, reason:, state: :redacted)
     raise ArgumentError, 'Moderator must have moderation privileges' unless moderator.can_moderate?
-    raise ArgumentError, 'Invalid redaction state' unless [:redacted, :partial].include?(state)
+    raise ArgumentError, 'Invalid redaction state' unless [ :redacted, :partial ].include?(state)
 
     ActiveRecord::Base.transaction do
       # Store original body if not already redacted

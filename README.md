@@ -93,7 +93,7 @@ bundle exec cucumber
 ```
 
 **RSpec coverage**
-- Line Coverage: 96.56% (618 / 640)
+- Line Coverage: 97.38% (633 / 650) 195 examples, 0 failure
 - `spec/models/post_spec.rb`: validations, taxonomy limits, search helper, expiration logic, and thread-identity callback.
 - `spec/models/answer_spec.rb`: body validations, per-thread identities, reveal logging, and acceptance cleanup.
 - `spec/models/answer_comment_spec.rb`: comment validation + thread delegation to preserve pseudonyms.
@@ -135,7 +135,7 @@ open coverage/index.html
 ```
 
 **Target:** 90%+ statement coverage
-**Local test results:** 96.56% line coverage (after running both suites)
+**Local test results:** 97.38% line coverage (after running both suites)
 
 Running the test suites will generate a detailed coverage report in `coverage/index.html`.
 
@@ -148,7 +148,37 @@ Running the test suites will generate a detailed coverage report in `coverage/in
 - A daily `ExpirePostsJob` can be scheduled (e.g., via Heroku Scheduler or cron) to purge posts whose `expires_at` timestamp has passed.
 - Seeded tag allowlist (via `TaxonomySeeder`): `academics`, `courses/coms`, `advising`, `housing`, `visas-immigration`, `financial-aid`, `mental-health`, `student-life`, `career`, `marketplace`, `accessibility-ods`, `public-safety`, `tech-support`, `international`, `resources`.
 
-### OpenAI Moderation API (Basic Implementation)
+### Moderator Setup
+The application supports role-based moderation with automatic role assignment via environment variables.
+
+#### Configuring Moderators
+Add moderator emails to the `MODERATOR_EMAILS` environment variable (comma-separated):
+
+**Local Development:**
+```bash
+# .env file
+MODERATOR_EMAILS=moderator@columbia.edu,admin@columbia.edu
+```
+
+**Production (Heroku):**
+```bash
+heroku config:set MODERATOR_EMAILS="email1@columbia.edu,email2@columbia.edu"
+```
+
+#### How It Works
+- When a user signs in with Google OAuth, their email is checked against the whitelist
+- If the email is in `MODERATOR_EMAILS`, they are automatically assigned the `moderator` role
+- Moderators can access `/moderation/posts` to review and manage content
+- Non-moderators see "Access denied" when attempting to access moderation features
+
+#### Manual Role Assignment (Alternative)
+For local development/testing, you can manually assign roles via Rails console:
+```ruby
+user = User.find_by(email: 'someone@columbia.edu')
+user.update(role: :moderator)  # or :staff, :admin
+```
+
+### OpenAI Moderation API (Automated Content Screening)
 The moderation system integrates with OpenAI's Moderation API for automated content screening.
 
 - **Model**: `omni-moderation-latest` (FREE tier available)
@@ -157,21 +187,29 @@ The moderation system integrates with OpenAI's Moderation API for automated cont
   # .env file (for local development)
   OPENAI_API_KEY=your_openai_api_key_here
 
-  # Or in config/credentials.yml.enc
-  VISUAL="code --wait" bin/rails credentials:edit
-  # Add: openai_api_key: your_key_here
+  # Or in Heroku
+  heroku config:set OPENAI_API_KEY="your_openai_api_key_here"
   ```
 - **Getting an API Key**: Visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) to create a free account and generate your API key.
 
-**Current Implementation (Phase 1)**:
-- Basic content screening using OpenAI's `omni-moderation-latest` detects flagged content automatically
-- Returns simple `flagged: true/false` status for policy violation detection
+**Implemented Features:**
+- Automatic content screening on post creation via background job (`ScreenPostContentJob`)
+- Posts flagged by AI are marked with `ai_flagged: true` in the database
+- OpenAI's `omni-moderation-latest` model detects policy violations automatically
+- Flagged posts appear in the moderation dashboard for human review
+- Non-blocking: Post creation succeeds even if API call fails
 
-**Planned for Future Iterations**:
+**Workflow:**
+1. User creates a post
+2. Background job automatically sends content to OpenAI Moderation API
+3. If flagged, post is marked `ai_flagged: true`
+4. Moderators can review flagged posts at `/moderation/posts`
+5. Moderators make final decision to redact or approve
+
+**Under Consideration:**
 - Detailed category analysis (violence, harassment, hate, sexual content, etc.) with confidence scores
-- Auto-hide workflow for flagged posts with author appeal system
-- Background job integration for automatic screening on post creation
-- Moderator dashboard integration for approve/reject actions on flagged content
+- Auto-hide workflow for severely flagged posts with author appeal system
+- Email notifications to moderators for flagged content
 
 ## Addressing Iteration 1 Feedback
 - Added the missing user-story coverage that graders flagged (blank search alert, invalid post/answer validations, and guest redirects) so every scenario now runs via Cucumber (`features/posts/browse_posts.feature`, `features/posts/create_post.feature`, `features/answers/add_answer.feature`).

@@ -7,10 +7,10 @@ RSpec.describe PostSearchQuery do
   let!(:tag_two) { Tag.find_or_create_by!(slug: 'housing') { |t| t.name = 'Housing' } }
 
   let!(:post_one) do
-    create(:post, title: 'Academics help', topic: topic_one).tap { |post| post.update!(tag_ids: [tag_one.id]) }
+    create(:post, title: 'Academics help', topic: topic_one).tap { |post| post.update!(tag_ids: [ tag_one.id ]) }
   end
   let!(:post_two) do
-    create(:post, title: 'Housing question', topic: topic_two).tap { |post| post.update!(tag_ids: [tag_two.id]) }
+    create(:post, title: 'Housing question', topic: topic_two).tap { |post| post.update!(tag_ids: [ tag_two.id ]) }
   end
 
   it 'returns all active posts without filters' do
@@ -25,7 +25,7 @@ RSpec.describe PostSearchQuery do
   end
 
   it 'filters by tags' do
-    results = described_class.new({ tag_ids: [tag_two.id] }).call
+    results = described_class.new({ tag_ids: [ tag_two.id ] }).call
     expect(results).to include(post_two)
     expect(results).not_to include(post_one)
   end

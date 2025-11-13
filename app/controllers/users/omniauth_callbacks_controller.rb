@@ -1,5 +1,4 @@
 class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
-  
   def google_oauth2
     # 1. 调用我们在 User 模型里写的逻辑
     @user = User.from_omniauth(request.env['omniauth.auth'])

@@ -4,7 +4,7 @@ class User < ApplicationRecord
   # 1. 你的 Devise 模块
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
-         :omniauthable, omniauth_providers: [:google_oauth2]
+         :omniauthable, omniauth_providers: [ :google_oauth2 ]
 
   # 2. 你的数据关联
   has_many :posts, dependent: :destroy
@@ -37,9 +37,8 @@ class User < ApplicationRecord
 
   # 3. 修复了“账户链接”逻辑的 OmniAuth 方法
   def self.from_omniauth(auth)
-    
     # --- 这是【新】的域名检查逻辑 ---
-    allowed_domains = ["@columbia.edu", "@barnard.edu"]
+    allowed_domains = [ '@columbia.edu', '@barnard.edu' ]
     email_domain = auth.info.email.match(/@(.+)/)[1] # 提取 "@" 后面的所有内容
 
     unless allowed_domains.include?("@#{email_domain}")
@@ -66,12 +65,16 @@ class User < ApplicationRecord
     end
 
     # 案例 3: 数据库里完全没有这个用户。创建一个全新的。
-    return User.create(
+    # Check if email is in moderator whitelist
+    moderator_emails = Rails.application.config.moderator_emails || []
+    user_role = moderator_emails.include?(auth.info.email) ? :moderator : :student
+
+    User.create(
       provider: auth.provider,
       uid: auth.uid,
       email: auth.info.email,
-      password: Devise.friendly_token[0, 20]
+      password: Devise.friendly_token[0, 20],
+      role: user_role
     )
   end
-  
 end

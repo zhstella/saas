@@ -86,6 +86,19 @@ RSpec.describe RedactionService, type: :service do
         post.reload
         expect(post.redacted_by).to eq(staff)
       end
+
+      it 'returns false when the update fails' do
+        allow(post).to receive(:visible?).and_return(true)
+        allow(post).to receive(:update!).and_raise(StandardError, 'db error')
+
+        expect(
+          RedactionService.redact_post(
+            post: post,
+            moderator: moderator,
+            reason: 'fails'
+          )
+        ).to be(false)
+      end
     end
 
     context 'when user lacks moderation privileges' do
@@ -174,6 +187,20 @@ RSpec.describe RedactionService, type: :service do
         }.to raise_error(ArgumentError, 'Moderator must have moderation privileges')
       end
     end
+
+    it 'returns false when the restore update fails' do
+      allow(post).to receive(:visible?).and_return(false)
+      allow(post).to receive(:redacted_body).and_return('stored')
+      allow(post).to receive(:body).and_return('stored')
+      allow(post).to receive(:update!).and_raise(StandardError, 'db error')
+
+      expect(
+        RedactionService.unredact_post(
+          post: post,
+          moderator: moderator
+        )
+      ).to be(false)
+    end
   end
 
   describe '.redact_answer' do
@@ -224,6 +251,19 @@ RSpec.describe RedactionService, type: :service do
       answer.reload
       expect(answer.redacted_body).to eq('Stored answer')
     end
+
+    it 'returns false when the answer update fails' do
+      allow(answer).to receive(:visible?).and_return(true)
+      allow(answer).to receive(:update!).and_raise(StandardError, 'db error')
+
+      expect(
+        RedactionService.redact_answer(
+          answer: answer,
+          moderator: moderator,
+          reason: 'fails'
+        )
+      ).to be(false)
+    end
   end
 
   describe '.unredact_answer' do
@@ -258,6 +298,26 @@ RSpec.describe RedactionService, type: :service do
 
       log = AuditLog.last
       expect(log.action).to eq('answer_unredacted')
+    end
+
+    it 'returns false when the restore update fails' do
+      allow(answer).to receive(:visible?).and_return(false)
+      allow(answer).to receive(:redacted_body).and_return('stored')
+      allow(answer).to receive(:body).and_return('stored')
+      allow(answer).to receive(:update!).and_raise(StandardError, 'db error')
+
+      expect(
+        RedactionService.unredact_answer(
+          answer: answer,
+          moderator: moderator
+        )
+      ).to be(false)
+    end
+  end
+
+  describe '.placeholder_text' do
+    it 'returns an empty string for unknown states' do
+      expect(described_class.send(:placeholder_text, :unknown)).to eq('')
     end
   end
 end

@@ -9,7 +9,8 @@
   <hr class="section-divider">
 
   <%# Redacted Posts Section %>
-  <h3 class="comments-title">Redacted Posts (<%= @redacted_posts.total_count %>)</h3>
+  <% redacted_total = @redacted_posts.respond_to?(:total_count) ? @redacted_posts.total_count : @redacted_posts.size %>
+  <h3 class="comments-title">Redacted Posts (<%= redacted_total %>)</h3>
 
   <% if @redacted_posts.any? %>
     <div class="posts-list">
@@ -59,9 +60,11 @@
     </div>
 
     <%# Pagination %>
-    <div class="pagination-container">
-      <%= paginate @redacted_posts %>
-    </div>
+    <% if respond_to?(:paginate) %>
+      <div class="pagination-container">
+        <%= paginate @redacted_posts %>
+      </div>
+    <% end %>
   <% else %>
     <div class="empty-state">
       <p>No redacted posts at this time.</p>
@@ -70,14 +73,72 @@
 
   <hr class="section-divider">
 
-  <%# Future: AI-Flagged Posts Section %>
-  <%# This section will be populated when AI auto-hide workflow (#6) is implemented %>
-  <div class="future-section" style="opacity: 0.5;">
-    <h3 class="comments-title">AI-Flagged Posts (Coming Soon)</h3>
-    <p class="post-meta">
-      This section will display posts flagged by AI moderation when Workstream #6 is implemented.
-    </p>
-  </div>
+  <%# AI-Flagged Posts Section %>
+  <% ai_flagged_total = @ai_flagged_posts.respond_to?(:total_count) ? @ai_flagged_posts.total_count : @ai_flagged_posts.size %>
+  <h3 class="comments-title">AI-Flagged Posts (<%= ai_flagged_total %>)</h3>
+  <p class="post-meta">Posts automatically flagged by OpenAI Moderation API awaiting human review</p>
+
+  <% if @ai_flagged_posts.any? %>
+    <div class="posts-list">
+      <% @ai_flagged_posts.each do |post| %>
+        <div class="post-card ai-flagged-card">
+          <div class="post-card-header">
+            <h3 class="post-title">
+              <%= link_to post.title, post_path(post) %>
+            </h3>
+            <span class="post-card-status ai-flagged">
+              AI Flagged
+            </span>
+          </div>
+
+          <div class="post-card-meta">
+            <span class="meta-chip">
+              Author: <%= post.user.email %>
+            </span>
+            <span class="meta-chip">
+              Flagged: <%= time_ago_in_words(post.updated_at) %> ago
+            </span>
+            <span class="meta-chip">
+              Topic: <%= post.topic&.name || 'N/A' %>
+            </span>
+          </div>
+
+          <div class="post-card-body">
+            <p class="post-excerpt">
+              <%= truncate(post.body, length: 200) %>
+            </p>
+          </div>
+
+          <div class="post-card-actions">
+            <%= link_to "Review Post", post_path(post), class: "form-secondary-button" %>
+            <%= button_to "Redact (Full)",
+                          redact_moderation_post_path(post),
+                          method: :patch,
+                          params: { reason: 'ai_flagged_content', state: 'redacted' },
+                          class: "form-submit-button",
+                          data: { turbo_confirm: "Redact this AI-flagged post?" } %>
+            <%= button_to "Approve (Clear Flag)",
+                          post_path(post),
+                          method: :patch,
+                          params: { post: { ai_flagged: false } },
+                          class: "form-secondary-button",
+                          data: { turbo_confirm: "Clear AI flag and approve this post?" } %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Pagination %>
+    <% if respond_to?(:paginate) %>
+      <div class="pagination-container">
+        <%= paginate @ai_flagged_posts %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <p>No AI-flagged posts at this time. Content screening is working automatically in the background.</p>
+    </div>
+  <% end %>
 </div>
 
 <style>
@@ -98,6 +159,15 @@
   .post-card-status.partial {
     background-color: #ffc107;
     color: #000;
+  }
+
+  .post-card-status.ai-flagged {
+    background-color: #ff6b6b;
+    color: white;
+  }
+
+  .ai-flagged-card {
+    border-left: 4px solid #ff6b6b;
   }
 
   .moderator-panel {

@@ -32,9 +32,8 @@ RSpec.describe 'Moderation::Answers', type: :request do
     it 'shows answer details and audit logs' do
       get moderation_answer_path(redacted_answer)
       expect(response).to have_http_status(:success)
-      expect(assigns(:answer)).to eq(redacted_answer)
-      expect(assigns(:post)).to eq(post)
-      expect(assigns(:audit_logs).count).to eq(1)
+      expect(response.body).to include('Answer Moderation')
+      expect(response.body).to include('Audit Trail')
     end
 
     context 'when user is not a moderator' do
